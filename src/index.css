@@ -129,3 +129,40 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Map labels: quiet, readable from across a room */
+.leaflet-tooltip.ct-map-label {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  color: var(--color-ink);
+  font-weight: 600;
+  font-size: 12px;
+  padding: 1px 6px;
+}
+.leaflet-tooltip.ct-map-label::before {
+  display: none;
+}
+
+/* Dialog: short fade and lift on open */
+dialog.ct-dialog[open] {
+  animation: dialog-in var(--duration-base) var(--ease-out-quiet);
+}
+dialog.ct-dialog::backdrop {
+  animation: backdrop-in var(--duration-base) var(--ease-out-quiet);
+}
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes dialog-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}

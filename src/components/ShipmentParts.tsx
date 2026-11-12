@@ -1,0 +1,116 @@
+import { Check, WarningCircle, WarningOctagon } from "@phosphor-icons/react";
+import type { Alert, EtaSnapshot, Milestone, RouteDetail, ShipmentDetail } from "../api/contract";
+import { RISK_WORD, STATUS_WORD } from "../lib/risk";
+import { clock, clockTz } from "../lib/time";
+import { Button, RiskBadge } from "./ui";
+import type { MapMarker, MapRoute } from "./ShipmentMap";
+
+/* ---------------- Milestone timeline (DESIGN.md 5.3, 7.2) ---------------- */
+
+export function MilestoneTimeline({ milestones, layout = "horizontal" }: { milestones: Milestone[]; layout?: "horizontal" | "vertical" }) {
+  const current = milestones.filter((m) => m.at).at(-1)?.status;
+  return (
+    <ol className={layout === "horizontal" ? "grid grid-cols-5 gap-2" : "space-y-3"}>
+      {milestones.map((m) => {
+        const done = !!m.at;
+        const isCurrent = m.status === current;
+        return (
+          <li key={m.status} aria-current={isCurrent ? "step" : undefined} className={layout === "horizontal" ? "min-w-0" : "flex items-center gap-3"}>
+            <div className={layout === "horizontal" ? "flex items-center gap-2" : "contents"}>
+              <span
+                aria-hidden
+                className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
+                  done ? (isCurrent ? "border-accent bg-accent text-white" : "border-ink-2 bg-ink-2 text-white") : "border-line-strong bg-surface"
+                }`}
+              >
+                {done && <Check size={12} weight="bold" />}
+              </span>
+              {layout === "horizontal" && <span className={`h-0.5 flex-1 ${done ? "bg-ink-2" : "bg-line"}`} aria-hidden />}
+            </div>
+            <div className={layout === "horizontal" ? "mt-2" : ""}>
+              <p className={`text-meta font-semibold ${done ? "text-ink" : "text-muted"}`}>{STATUS_WORD[m.status]}</p>
+              <p className="tnum text-meta text-muted">
+                {m.at ? clockTz(m.at) : "Not yet"}
+                {isCurrent && <span className="sr-only"> (current stage)</span>}
+              </p>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/* ---------------- Alert banner ---------------- */
+
+export function AlertBanner({ alert, headline, onReview }: { alert: Alert; headline: string; onReview?: () => void }) {
+  const high = alert.level === "HIGH";
+  const Icon = high ? WarningOctagon : WarningCircle;
+  return (
+    <div
+      role="region"
+      aria-label={`Alert ${alert.id}`}
+      className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border px-5 py-4 ${high ? "border-high/30 bg-high-soft" : "border-medium/30 bg-medium-soft"}`}
+    >
+      <Icon size={24} weight="bold" aria-hidden className={high ? "text-high" : "text-medium"} />
+      <div className="min-w-0 flex-1">
+        <p className={`text-lead font-semibold ${high ? "text-high" : "text-medium"}`}>
+          <span className="sr-only">{RISK_WORD[alert.level]}. </span>
+          {headline}
+        </p>
+        <p className="tnum text-meta text-ink-2">
+          {RISK_WORD[alert.level]}. Alert {alert.id} opened {clockTz(alert.opened_at)}. Needs a decision.
+        </p>
+      </div>
+      {onReview && (
+        <Button variant="primary" onClick={onReview}>
+          Review options
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Text alternative to the map (DESIGN.md 7.6) ---------------- */
+
+export function positionText(s: Pick<ShipmentDetail, "last_position" | "active_route_id" | "status"> & { current_eta: EtaSnapshot | null }, route?: RouteDetail): string {
+  const p = s.last_position;
+  if (!p) return s.status === "PLANNED" || s.status === "DISPATCHED" ? "Not departed yet." : "No position received.";
+  const stale = s.current_eta?.confidence === "LOW" && (s.current_eta?.position_age_min ?? 0) > 0;
+  const of = route ? ` of ${route.total_km}` : "";
+  return `km ${p.progress_km}${of} on ${s.active_route_id}, ${stale ? "last seen" : "last update"} ${clockTz(p.occurred_at)}.`;
+}
+
+export function isStale(eta: EtaSnapshot | null | undefined) {
+  return !!eta && eta.confidence === "LOW" && eta.position_age_min > 0;
+}
+
+/** Map layers for one shipment: active route solid, the planned route dashed if it was replaced, alternatives dotted. */
+export function shipmentLayers(
+  s: ShipmentDetail,
+  routes: Record<string, RouteDetail | undefined>,
+  options: { drawInActive?: boolean; showAlternatives?: boolean } = {},
+): { routes: MapRoute[]; marker: MapMarker | null } {
+  const out: MapRoute[] = [];
+  const active = routes[s.active_route_id];
+  const planned = routes[s.planned_route_id];
+  const rerouted = s.active_route_id !== s.planned_route_id;
+  if (rerouted && planned) out.push({ route: planned, style: "previous" });
+  if (active) out.push({ route: active, style: "active", drawIn: rerouted && options.drawInActive });
+  if (!rerouted && options.showAlternatives && planned) {
+    for (const alt of planned.alternatives) {
+      const r = routes[alt.alt_route_id];
+      if (r) out.push({ route: r, style: "alternative" });
+    }
+  }
+  const p = s.last_position;
+  const stale = isStale(s.current_eta);
+  const marker = p
+    ? { id: s.id, lat: p.lat, lng: p.lng, label: stale ? `${s.id}, last seen ${clock(p.occurred_at)}` : s.id, stale, emphasis: !!s.open_alert }
+    : null;
+  return { routes: out, marker };
+}
+
+export function RiskCell({ eta }: { eta: EtaSnapshot | null }) {
+  return eta ? <RiskBadge level={eta.risk_level} /> : <span className="text-meta text-muted">No estimate</span>;
+}
