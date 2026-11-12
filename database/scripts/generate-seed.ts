@@ -55,6 +55,20 @@ function buildConfig() {
     demo: { speed: 60, position_interval_min: 5, stale_tick_min: 5 },
     // The driver's three-tap report has no location: road problems are placed this far ahead of the truck.
     disruptions: { report_ahead_km: 15 },
+    // Generated invoices. Every figure is invented for the demo (database/README.md). The first rule whose
+    // text appears in the product name wins, so the more specific names come first.
+    invoice: {
+      gst_pct: 18,
+      default_rate_per_t_inr: 105000,
+      rates: [
+        { match: 'copolymer', rate_per_t_inr: 112000, hsn: '3902' },
+        { match: 'polypropylene', rate_per_t_inr: 104000, hsn: '3902' },
+        { match: 'PP', rate_per_t_inr: 104000, hsn: '3902' },
+        { match: 'LLDPE', rate_per_t_inr: 110000, hsn: '3901' },
+        { match: 'HDPE', rate_per_t_inr: 108000, hsn: '3901' },
+        { match: 'LDPE', rate_per_t_inr: 116000, hsn: '3901' },
+      ],
+    },
     // Live route weather (Open-Meteo). Thresholds are the team's starting values, stated in database/README.md.
     weather: {
       sample_every_km: 40,

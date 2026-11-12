@@ -16,7 +16,7 @@
       }
     }
   },
-  "required": ["fictional_assumptions", "eta", "category_default_delay_min", "alerts", "options", "impact", "demo", "disruptions", "weather"],
+  "required": ["fictional_assumptions", "eta", "category_default_delay_min", "alerts", "options", "impact", "demo", "disruptions", "weather", "invoice"],
   "properties": {
     "fictional_assumptions": {"type": "array", "items": {"type": "string"}, "minItems": 1},
     "eta": {
@@ -78,6 +78,28 @@
       "additionalProperties": false,
       "required": ["cost_per_late_hour_inr"],
       "properties": {"cost_per_late_hour_inr": {"type": "number", "exclusiveMinimum": 0}}
+    },
+    "invoice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gst_pct", "default_rate_per_t_inr", "rates"],
+      "properties": {
+        "gst_pct": {"type": "number", "minimum": 0, "maximum": 100},
+        "default_rate_per_t_inr": {"type": "number", "exclusiveMinimum": 0},
+        "rates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["match", "rate_per_t_inr", "hsn"],
+            "properties": {
+              "match": {"type": "string", "minLength": 1},
+              "rate_per_t_inr": {"type": "number", "exclusiveMinimum": 0},
+              "hsn": {"type": "string", "pattern": "^[0-9]{4}$"}
+            }
+          }
+        }
+      }
     },
     "weather": {
       "type": "object",
