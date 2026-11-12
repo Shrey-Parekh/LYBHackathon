@@ -6,7 +6,7 @@ import { useMarkRead, useNotifications } from "../../api/queries";
 import { useRoutes } from "../../api/useShipmentRoutes";
 import type { ShipmentDetail, ShipmentStatus } from "../../api/contract";
 import { Button, CrossFade, EmptyState, ErrorNote, Loading, RiskBadge, Skeleton, StatusTag, ConfidenceTag } from "../../components/ui";
-import { positionText } from "../../components/ShipmentParts";
+import { JourneyBar, positionText } from "../../components/ShipmentParts";
 import { clock, clockTz } from "../../lib/time";
 import { DEMO_MODE } from "../../lib/env";
 import { duration, easeOut } from "../../lib/motion";
@@ -141,7 +141,10 @@ function Trip({ s, error, onRetry, loadedAt }: { s: ShipmentDetail; error: unkno
         <h2 id="pos-h" className="text-meta font-medium text-muted">
           Position{DEMO_MODE ? ": simulated" : ""}
         </h2>
-        <p className="tnum mt-1 text-body text-ink">{positionText(s, routes[s.active_route_id])}</p>
+        <div className="mt-3">
+          <JourneyBar from={routes[s.planned_route_id]?.origin ?? "Plant X"} to={s.destination_name} progressKm={s.last_position?.progress_km ?? null} totalKm={routes[s.active_route_id]?.total_km ?? null} status={s.status} />
+        </div>
+        <p className="tnum mt-3 text-body text-ink">{positionText(s, routes[s.active_route_id])}</p>
         {eta && <p className="mt-2 text-body text-ink-2">{eta.headline}</p>}
       </section>
     </Column>

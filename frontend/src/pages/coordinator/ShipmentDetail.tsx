@@ -73,7 +73,7 @@ export function ShipmentDetailPage() {
           <ArrowLeft size={14} weight="bold" aria-hidden /> Attention queue
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className="text-figure font-semibold tracking-tight">{s.id}</h1>
+          <h1 className="font-mono text-figure font-semibold tracking-[-0.03em]">{s.id}</h1>
           {eta && <RiskBadge level={eta.risk_level} size="lg" />}
           <StatusTag status={s.status} />
           <p className="text-body text-ink-2">
@@ -171,10 +171,10 @@ function MapLegend({ rerouted }: { rerouted: boolean }) {
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1 text-meta text-muted" aria-label="Map legend">
       <li className="flex items-center gap-1.5">
-        <span aria-hidden className="inline-block h-1 w-5 rounded-full bg-ink" /> Current route
+        <span aria-hidden className="inline-block h-1 w-5 rounded-full bg-accent" /> Current route
       </li>
       <li className="flex items-center gap-1.5">
-        <span aria-hidden className="inline-block w-5 border-t-2 border-dashed border-muted" /> {rerouted ? "Previous route" : "Alternative route"}
+        <span aria-hidden className="inline-block w-5 border-t-2 border-dashed border-ink-2" /> {rerouted ? "Previous route" : "Alternative route"}
       </li>
     </ul>
   );

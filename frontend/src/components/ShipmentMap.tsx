@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import type { RouteDetail } from "../api/contract";
 import { prefersReducedMotion } from "../lib/motion";
+import { token, useTheme } from "../lib/theme";
 
 /*
   Leaflet map with OpenStreetMap tiles. Routes and markers come only from API data (GeoJSON).
@@ -26,22 +27,23 @@ export interface MapMarker {
   emphasis?: boolean;
 }
 
-const LINE: Record<RouteStyle, L.PolylineOptions> = {
-  active: { color: "#14181d", weight: 4, opacity: 0.85 },
-  alternative: { color: "#353c44", weight: 4, opacity: 0.85, dashArray: "1 9", lineCap: "round" },
-  previous: { color: "#353c44", weight: 4, opacity: 0.6, dashArray: "10 8" },
-};
+/** Route styles read the theme's colours at draw time (SVG attributes cannot use CSS variables). */
+function lineStyle(style: RouteStyle): L.PolylineOptions {
+  if (style === "active") return { color: token("--accent"), weight: 5, opacity: 0.95, lineCap: "round", lineJoin: "round" };
+  if (style === "alternative") return { color: token("--ink-2"), weight: 4, opacity: 0.8, dashArray: "1 9", lineCap: "round" };
+  return { color: token("--ink-2"), weight: 4, opacity: 0.55, dashArray: "10 8" };
+}
 
 function markerIcon(m: MapMarker) {
-  const fill = m.stale ? "#b9c0c7" : m.emphasis ? "#0b5566" : "#353c44";
+  const fill = m.stale ? token("--line-strong") : m.emphasis ? token("--accent") : token("--ink-2");
   const ring = m.stale ? "stroke-dasharray:3 2;" : "";
   return L.divIcon({
     className: "",
     iconSize: [28, 28],
     iconAnchor: [14, 14],
     html: `<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-      <circle cx="14" cy="14" r="11" fill="${fill}" stroke="#fff" stroke-width="3" style="${ring}"/>
-      <path d="M9 15h6v-4h2l2 3v1h-1M9 15v-4h6" stroke="#fff" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+      <circle cx="14" cy="14" r="11" fill="${fill}" stroke="${token("--raised")}" stroke-width="3" style="${ring}"/>
+      <path d="M9 15h6v-4h2l2 3v1h-1M9 15v-4h6" stroke="${token("--raised")}" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
     </svg>`,
   });
 }
@@ -65,6 +67,7 @@ export function ShipmentMap({
   const routeLayer = useRef<L.LayerGroup | null>(null);
   const markerRefs = useRef(new Map<string, { marker: L.Marker; anim: number | null; latlng: L.LatLng }>());
   const [tilesFailed, setTilesFailed] = useState(false);
+  const theme = useTheme();
   const fitted = useRef("");
 
   // Create the map once.
@@ -99,7 +102,7 @@ export function ShipmentMap({
   }, []);
 
   // Routes
-  const routeKey = routes.map((r) => `${r.route.id}:${r.style}:${r.drawIn ? 1 : 0}`).join("|");
+  const routeKey = theme + routes.map((r) => `${r.route.id}:${r.style}:${r.drawIn ? 1 : 0}`).join("|");
   useEffect(() => {
     const layer = routeLayer.current;
     if (!layer) return;
@@ -109,7 +112,7 @@ export function ShipmentMap({
     for (const style of order) {
       for (const r of routes.filter((x) => x.style === style)) {
         const latlngs = r.route.geometry.coordinates.map(([lng, lat]) => L.latLng(lat, lng));
-        const line = L.polyline(latlngs, { ...LINE[style], interactive: false }).addTo(layer);
+        const line = L.polyline(latlngs, { ...lineStyle(style), interactive: false }).addTo(layer);
         if (r.drawIn && !prefersReducedMotion()) {
           const path = line.getElement() as SVGPathElement | undefined;
           if (path) {
@@ -139,7 +142,7 @@ export function ShipmentMap({
   }, [focusKey, routes.length]);
 
   // Markers: create, glide to new positions, remove.
-  const markerKey = markers.map((m) => `${m.id}:${m.lat.toFixed(5)}:${m.lng.toFixed(5)}:${m.stale ? 1 : 0}:${m.emphasis ? 1 : 0}:${m.label}`).join("|");
+  const markerKey = theme + markers.map((m) => `${m.id}:${m.lat.toFixed(5)}:${m.lng.toFixed(5)}:${m.stale ? 1 : 0}:${m.emphasis ? 1 : 0}:${m.label}`).join("|");
   useEffect(() => {
     const m = map.current;
     if (!m) return;
@@ -182,8 +185,8 @@ export function ShipmentMap({
   }, [markerKey]);
 
   return (
-    <div className="relative overflow-hidden rounded-md border border-line">
-      <div ref={el} className={className} role="region" aria-label={label} />
+    <div className="relative overflow-hidden rounded-lg border border-line">
+      <div ref={el} className={`ct-map ${className}`} role="region" aria-label={label} />
       {tilesFailed && (
         <p role="status" className="absolute left-3 top-3 z-[500] rounded-sm border border-line bg-surface px-2 py-1 text-meta text-ink-2">
           Map background unavailable. Routes and positions are still shown.

@@ -7,6 +7,7 @@ import { App } from "./App";
 import { makeQueryClient } from "./api/queries";
 import { ToastProvider } from "./components/Toasts";
 import "./index.css";
+import "./lib/theme";
 
 const queryClient = makeQueryClient();
 

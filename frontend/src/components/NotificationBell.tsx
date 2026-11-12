@@ -68,7 +68,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
         <Bell size={20} weight="bold" aria-hidden />
         <CrossFade value={unread} shift="8px" className="h-5 min-w-5 overflow-hidden">
           {(n) => (
-            <span className={`tnum inline-flex h-5 min-w-5 items-center justify-center rounded-sm px-1 text-meta font-semibold ${n ? "bg-accent text-white" : "bg-sunken text-muted"}`}>{n}</span>
+            <span className={`tnum inline-flex h-5 min-w-5 items-center justify-center rounded-sm px-1 text-meta font-semibold ${n ? "bg-accent text-on-accent" : "bg-sunken text-muted"}`}>{n}</span>
           )}
         </CrossFade>
       </button>

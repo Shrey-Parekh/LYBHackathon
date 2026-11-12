@@ -1,59 +1,119 @@
 @import "tailwindcss";
-@import "@fontsource/ibm-plex-sans/400.css";
-@import "@fontsource/ibm-plex-sans/500.css";
-@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
 @import "leaflet/dist/leaflet.css";
 
 /*
   Design tokens. Every colour, size, radius and duration used by the app comes from here.
-  Rule: colour carries meaning only (risk levels and the primary action); everything else is grey.
-  Contrast of every text/background pair below is at least 4.5:1 (checked in docs/design-tokens.md).
+  Palette: muted sage-slate neutrals, one contrasting accent (cobalt) for the primary action, focus and
+  selection. Muted green / amber / red are reserved for risk and always come with an icon and a word.
+  Light is the default (projectors wash out dark themes); dark is a manual toggle (data-theme="dark").
+  Contrast of every text/background pair is at least 4.5:1 in both themes (docs/design-tokens.md).
+  Radius rule: badges 6px, controls 8px, panels 14px.
 */
+:root {
+  --canvas: #e8ece9;
+  --surface: #f6f8f6;
+  --raised: #ffffff;
+  --sunken: #dce2de;
+  --line: #cbd3ce;
+  --line-strong: #a9b4ae;
+  --ink: #18211e;
+  --ink-2: #34403b;
+  --muted: #56635d;
+  --accent: #2f45c8;
+  --accent-hover: #2537a6;
+  --accent-soft: #dfe4f7;
+  --on-accent: #ffffff;
+  --rail: #17201d;
+  --rail-2: #212c28;
+  --rail-ink: #c9d3ce;
+  --rail-muted: #8a9690;
+  --rail-accent: #9fb0ff;
+  --low: #2e6a4c;
+  --low-soft: #d6e8dc;
+  --medium: #7a4c00;
+  --medium-soft: #f1e2c2;
+  --high: #9a3228;
+  --high-soft: #f2d8d3;
+  --chart-ink: #34403b;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --canvas: #111714;
+  --surface: #18201c;
+  --raised: #1d2622;
+  --sunken: #212b26;
+  --line: #2c3832;
+  --line-strong: #44524b;
+  --ink: #e6ece8;
+  --ink-2: #c3cec8;
+  --muted: #93a29a;
+  --accent: #9aaaff;
+  --accent-hover: #b4c0ff;
+  --accent-soft: #232c55;
+  --on-accent: #0f1530;
+  --rail: #0c110f;
+  --rail-2: #161e1b;
+  --low: #8ccba5;
+  --low-soft: #1c3327;
+  --medium: #e3b66a;
+  --medium-soft: #3a2e15;
+  --high: #f0a096;
+  --high-soft: #3d201c;
+  --chart-ink: #c3cec8;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Geist Variable", system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-rail: var(--rail);
+  --color-rail-2: var(--rail-2);
+  --color-rail-ink: var(--rail-ink);
+  --color-rail-muted: var(--rail-muted);
+  --color-rail-accent: var(--rail-accent);
+  --color-low: var(--low);
+  --color-low-soft: var(--low-soft);
+  --color-medium: var(--medium);
+  --color-medium-soft: var(--medium-soft);
+  --color-high: var(--high);
+  --color-high-soft: var(--high-soft);
+}
+
 @theme {
-  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
-
-  /* Neutrals */
-  --color-canvas: #f5f6f7;
-  --color-surface: #ffffff;
-  --color-sunken: #eef0f2;
-  --color-line: #dde1e5;
-  --color-line-strong: #b9c0c7;
-  --color-ink: #14181d;
-  --color-ink-2: #353c44;
-  --color-muted: #535b64;
-
-  /* The one accent: primary action, focus ring, selected row */
-  --color-accent: #0b5566;
-  --color-accent-hover: #08414e;
-  --color-accent-soft: #e3eff2;
-
-  /* Risk: always shown with an icon and a word as well */
-  --color-low: #1d6b3c;
-  --color-low-soft: #e6f2ea;
-  --color-medium: #8a4b00;
-  --color-medium-soft: #fcefd9;
-  --color-high: #a3171c;
-  --color-high-soft: #fbe6e6;
-
-  /* Short type scale (px): 13 meta, 15 body, 17 lead, 20 heading, 28 figure, 40 driver figure */
+  /* Short type scale (px): 13 meta, 15 body, 17 lead, 21 heading, 30 figure, 44 driver/hero */
   --text-meta: 0.8125rem;
   --text-meta--line-height: 1.25rem;
   --text-body: 0.9375rem;
   --text-body--line-height: 1.5rem;
   --text-lead: 1.0625rem;
   --text-lead--line-height: 1.625rem;
-  --text-heading: 1.25rem;
+  --text-heading: 1.3125rem;
   --text-heading--line-height: 1.75rem;
-  --text-figure: 1.75rem;
-  --text-figure--line-height: 2.125rem;
-  --text-driver: 2.5rem;
-  --text-driver--line-height: 2.875rem;
+  --text-figure: 1.875rem;
+  --text-figure--line-height: 2.25rem;
+  --text-driver: 2.75rem;
+  --text-driver--line-height: 3rem;
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
 
-  /* Motion durations: interface changes stay within 150-300 ms */
   --duration-fast: 150ms;
   --duration-base: 220ms;
   --duration-slow: 300ms;
@@ -62,11 +122,16 @@
 
 @layer base {
   html {
-    background: var(--color-canvas);
-    color: var(--color-ink);
+    background: var(--canvas);
+    color: var(--ink);
     font-family: var(--font-sans);
     font-size: 16px;
     -webkit-font-smoothing: antialiased;
+    font-feature-settings: "ss01";
+  }
+  /* Theme switch fades colours rather than snapping (never on first paint). */
+  html.theme-anim, html.theme-anim * {
+    transition: background-color var(--duration-slow) var(--ease-out-quiet), border-color var(--duration-slow) var(--ease-out-quiet), color var(--duration-slow) var(--ease-out-quiet) !important;
   }
   body {
     min-height: 100dvh;
@@ -76,12 +141,12 @@
     font-variant-numeric: tabular-nums;
   }
   :focus-visible {
-    outline: 3px solid var(--color-accent);
+    outline: 3px solid var(--accent);
     outline-offset: 2px;
     border-radius: 2px;
   }
   ::selection {
-    background: var(--color-accent-soft);
+    background: var(--accent-soft);
   }
 }
 
@@ -91,14 +156,14 @@
   50% { opacity: 0.55; }
 }
 .skeleton {
-  background: var(--color-sunken);
+  background: var(--sunken);
   border-radius: var(--radius-sm);
   animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 
 /* Brief highlight on a factor row whose minutes changed */
 @keyframes row-flash {
-  from { background-color: var(--color-medium-soft); }
+  from { background-color: var(--medium-soft); }
   to { background-color: transparent; }
 }
 .row-changed {
@@ -107,7 +172,7 @@
 
 /* Leaflet: plain background when tiles fail, quiet controls */
 .leaflet-container {
-  background: var(--color-sunken);
+  background: var(--sunken);
   font-family: var(--font-sans);
 }
 .leaflet-control-attribution {
@@ -132,11 +197,11 @@
 
 /* Map labels: quiet, readable from across a room */
 .leaflet-tooltip.ct-map-label {
-  background: var(--color-surface);
-  border: 1px solid var(--color-line-strong);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   box-shadow: none;
-  color: var(--color-ink);
+  color: var(--ink);
   font-weight: 600;
   font-size: 12px;
   padding: 1px 6px;
@@ -183,4 +248,28 @@ dialog.ct-dialog::backdrop {
 .xf-out { animation: xf-out var(--duration-slow) var(--ease-out-quiet) both; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {
   .xf-in, .xf-out { --xf-shift: 0 !important; }
+}
+
+/* Map tiles are muted so routes, markers and labels carry the colour. Dark theme inverts them. */
+.ct-map .leaflet-tile-pane {
+  filter: grayscale(0.85) contrast(0.92) brightness(1.04);
+}
+:root[data-theme="dark"] .ct-map .leaflet-tile-pane {
+  filter: grayscale(1) invert(0.9) hue-rotate(180deg) brightness(0.85) contrast(0.9);
+}
+/* Login corridor map sits on the dark rail in both themes */
+.ct-map-rail .leaflet-tile-pane,
+:root[data-theme="dark"] .ct-map-rail .leaflet-tile-pane {
+  filter: grayscale(1) invert(0.92) hue-rotate(180deg) brightness(0.95) contrast(0.95);
+}
+.ct-map-rail.leaflet-container { background: var(--rail-2); }
+.ct-map-rail .leaflet-control-attribution { background: transparent; color: var(--rail-muted); }
+.ct-map-rail .leaflet-control-attribution a { color: var(--rail-ink); }
+
+/* Journey bar glides between positions */
+.journey-fill, .journey-truck {
+  transition: transform 900ms var(--ease-out-quiet);
+}
+@media (prefers-reduced-motion: reduce) {
+  .journey-fill, .journey-truck { transition: none; }
 }

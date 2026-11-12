@@ -1,55 +1,50 @@
 # Design tokens
 
-Source of truth: `src/index.css` (`@theme`). Motion values in seconds: `src/lib/motion.ts`.
+Source of truth: `src/index.css` (CSS variables, light and dark). Motion values in seconds: `src/lib/motion.ts`. Theme switching: `src/lib/theme.ts`.
 
 ## Colour
 
-Colour carries meaning only: risk levels and the primary action. Everything else is grey.
+Muted sage-slate neutrals with one contrasting accent. Colour carries meaning: cobalt is the primary action, focus and selection; muted green, amber and red are reserved for risk and always come with an icon and a word. Light is the default (projectors wash out dark themes); dark is a toggle.
 
-| Token | Hex | Use |
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| canvas | `#E8ECE9` | `#111714` | Page background |
+| surface / raised | `#F6F8F6` / `#FFFFFF` | `#18201C` / `#1D2622` | Panels, inputs, hover |
+| sunken | `#DCE2DE` | `#212B26` | Tracks, skeletons, disabled |
+| line / line-strong | `#CBD3CE` / `#A9B4AE` | `#2C3832` / `#44524B` | Borders |
+| ink / ink-2 / muted | `#18211E` / `#34403B` / `#56635D` | `#E6ECE8` / `#C3CEC8` / `#93A29A` | Text |
+| accent | `#2F45C8` (soft `#DFE4F7`) | `#9AAAFF` (soft `#232C55`) | Primary action, focus ring, selection, routes |
+| rail | `#17201D` | `#0C110F` | Coordinator navigation, login panel, headline impact tile |
+| low | `#2E6A4C` on `#D6E8DC` | `#8CCBA5` on `#1C3327` | On schedule |
+| medium | `#7A4C00` on `#F1E2C2` | `#E3B66A` on `#3A2E15` | At risk |
+| high | `#9A3228` on `#F2D8D3` | `#F0A096` on `#3D201C` | Delayed |
+
+## Contrast (WCAG ratio, computed)
+
+| Pair | Light | Dark |
 |---|---|---|
-| canvas | `#F5F6F7` | Page background |
-| surface | `#FFFFFF` | Cards, tables |
-| sunken | `#EEF0F2` | Skeletons, hover, disabled buttons |
-| line / line-strong | `#DDE1E5` / `#B9C0C7` | Borders, dividers |
-| ink / ink-2 / muted | `#14181D` / `#353C44` / `#535B64` | Text, primary to tertiary |
-| accent | `#0B5566` (hover `#08414E`, soft `#E3EFF2`) | The one accent: primary action, focus ring, selection, headline figure |
-| low | `#1D6B3C` on `#E6F2EA` | "On schedule" (with a check icon) |
-| medium | `#8A4B00` on `#FCEFD9` | "At risk" (with a circled warning icon) |
-| high | `#A3171C` on `#FBE6E6` | "Delayed" (with an octagon warning icon) |
-
-Risk is always icon + word; the three icons have different shapes so the level reads without colour.
-
-## Contrast (WCAG 2.x ratio, computed)
-
-| Pair | Ratio |
-|---|---|
-| ink on surface / canvas | 17.82 / 16.47 |
-| ink-2 on surface | 11.16 |
-| muted on surface / canvas / sunken | 6.89 / 6.37 / 6.03 |
-| white on accent, accent on surface | 8.38 |
-| accent on accent-soft | 7.14 |
-| low on low-soft | 5.67 |
-| medium on medium-soft | 5.99 |
-| high on high-soft / surface | 6.51 / 7.79 |
-| ink-2 on sunken (disabled button) | above 10 |
+| ink on surface | 15.43 | 13.89 |
+| muted on surface / sunken | 5.89 / 4.79 | 6.24 / 5.48 |
+| accent on surface | 7.01 | 7.58 |
+| on-accent on accent | 7.48 | 8.18 |
+| low / medium / high on their soft | 5.01 / 5.73 / 5.43 | 7.22 / 7.06 / 7.16 |
+| rail text / rail muted on rail | 10.86 / 5.43 | |
 
 ## Type
 
-One family, IBM Plex Sans (400, 500, 600), self-hosted. Tabular figures (`.tnum`) on every time, duration, distance and count.
+Geist (variable) for everything; Geist Mono for shipment IDs and the replay clock. Tabular figures (`.tnum`) on every time, duration and distance.
 
 | Token | Size / line height | Use |
 |---|---|---|
 | meta | 13 / 20 | Labels, captions |
 | body | 15 / 24 | Default |
 | lead | 17 / 26 | Headlines, emphasised lines |
-| heading | 20 / 28 | Section and step titles |
-| figure | 28 / 34 | ETA and page titles |
-| driver | 40 / 46 | Driver screen figures and main button |
+| heading | 21 / 28 | Section titles, queue ETAs |
+| figure | 30 / 36 | ETA, page titles |
+| driver | 44 / 48 | Driver figures and main button |
 
-## Space, radius, motion
+## Shape, space, motion
 
-- Spacing: Tailwind 4 px scale, used at 1, 2, 3, 4, 5, 6, 8.
-- Radius: 4 px (badges), 6 px (buttons, inputs), 10 px (cards). No pills on containers.
-- No shadows, no gradients. 1 px borders separate surfaces.
-- Motion: 150 ms (fast), 220 ms (base), 300 ms (slow); ease-out `cubic-bezier(0.22, 1, 0.36, 1)`. Nothing bounces or loops. Transforms off under `prefers-reduced-motion`; fades remain.
+- Radius rule: badges 6 px, controls 8 px, panels 14 px. Journey bar and factor bar are fully rounded tracks.
+- No shadows or gradients. 1 px borders separate surfaces; the dark rail gives the coordinator view its structure.
+- Motion: 150 / 220 / 300 ms, ease-out `cubic-bezier(0.22, 1, 0.36, 1)`; nothing bounces or loops. Animated: page fade-in, sliding rail indicator, queue rows re-ordering, value cross-fades, factor bar growing in, journey marker gliding, option rows staggering, toasts, theme icon. Transforms switch off under `prefers-reduced-motion`; fades remain.

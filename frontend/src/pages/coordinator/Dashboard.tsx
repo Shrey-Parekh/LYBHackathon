@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from "react";
+import { motion } from "motion/react";
 import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useDelayCauses, useImpact, useOnTime } from "../../api/queries";
 import type { DelayCauseRow, OnTimeRow } from "../../api/contract";
@@ -6,6 +7,7 @@ import { Card, ErrorNote, Loading, Skeleton } from "../../components/ui";
 import { CATEGORY_WORD } from "../../lib/risk";
 import { inr } from "../../lib/time";
 import { prefersReducedMotion } from "../../lib/motion";
+import { token, useTheme } from "../../lib/theme";
 
 /*
   Performance dashboard (DESIGN.md 7.2, 10.3): on-time % and delay minutes by cause, grouped by route
@@ -16,10 +18,20 @@ import { prefersReducedMotion } from "../../lib/motion";
 */
 type GroupBy = "route" | "transporter";
 
-const INK = "#353c44";
-const ACCENT = "#0b5566";
-const GRID = "#dde1e5";
-const AXIS = { fontSize: 13, fill: "#535b64", fontFamily: "IBM Plex Sans" };
+/** Chart colours come from the theme tokens and update when the theme changes. */
+function useChartColors() {
+  useTheme();
+  return {
+    INK: token("--chart-ink"),
+    ACCENT: token("--accent"),
+    GRID: token("--line"),
+    TEXT: token("--ink"),
+    CURSOR: token("--sunken"),
+    BORDER: token("--line-strong"),
+    SURFACE: token("--raised"),
+    AXIS: { fontSize: 13, fill: token("--muted"), fontFamily: "Geist Variable" },
+  };
+}
 
 /** Animate only the first time a chart mounts in this page view. */
 function useGrowOnce() {
@@ -52,7 +64,7 @@ export function Dashboard() {
                 role="radio"
                 aria-checked={groupBy === g}
                 onClick={() => setGroupBy(g)}
-                className={`h-10 px-4 text-body font-medium first:rounded-l-md last:rounded-r-md ${groupBy === g ? "bg-accent text-white" : "bg-surface text-ink-2 hover:bg-sunken"}`}
+                className={`h-10 px-4 text-body font-medium first:rounded-l-md last:rounded-r-md ${groupBy === g ? "bg-accent text-on-accent" : "bg-surface text-ink-2 hover:bg-sunken"}`}
               >
                 By {g}
               </button>
@@ -100,8 +112,8 @@ function ImpactPanel({ q }: { q: ReturnType<typeof useImpact> }) {
         </div>
       ) : m ? (
         <>
-          <dl className="grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-4">
-            <Tile label="Warning lead time (median)" value={m.warning_lead_time_median_min !== null ? `${m.warning_lead_time_median_min} min` : "—"} note="Today: zero or less. Lateness is found out after it happens." headline />
+          <dl className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+            <Tile label="Warning lead time (median)" value={m.warning_lead_time_median_min !== null ? `${m.warning_lead_time_median_min} min` : "—"} note="Before the promised time. Today that is zero: lateness is found out after it happens." headline />
             <Tile label="Delay avoided by decisions" value={m.delay_avoided_total_min !== null ? `${m.delay_avoided_total_min} min` : "After arrival"} note="Simulated no-action arrival minus actual arrival" />
             <Tile label="On-time delivery" value={m.on_time_pct_with_decisions !== null ? `${m.on_time_pct_with_decisions}%` : "—"} note={m.on_time_pct_without_decisions !== null ? `${m.on_time_pct_without_decisions}% without the decisions (simulated)` : undefined} />
             <Tile label="Cost of lateness avoided" value={m.cost_of_lateness_avoided_inr !== null ? inr(m.cost_of_lateness_avoided_inr) : "After arrival"} note="Modelled estimate" />
@@ -128,11 +140,16 @@ function ImpactPanel({ q }: { q: ReturnType<typeof useImpact> }) {
 
 function Tile({ label, value, note, headline }: { label: string; value: string; note?: string; headline?: boolean }) {
   return (
-    <div className="bg-surface px-5 py-4">
-      <dt className="text-meta text-muted">{label}</dt>
-      <dd className={`tnum mt-0.5 font-semibold ${headline ? "text-[2.25rem] leading-tight text-accent" : "text-figure text-ink"}`}>{value}</dd>
-      {note && <dd className="mt-0.5 text-meta text-ink-2">{note}</dd>}
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className={`rounded-md px-5 py-4 ${headline ? "bg-rail text-rail-ink" : "bg-raised"}`}
+    >
+      <dt className={`text-meta ${headline ? "text-rail-muted" : "text-muted"}`}>{label}</dt>
+      <dd className={`tnum mt-1 font-semibold tracking-[-0.02em] ${headline ? "text-[2.75rem] leading-none text-[#eef2ef]" : "text-figure text-ink"}`}>{value}</dd>
+      {note && <dd className={`mt-2 text-meta ${headline ? "text-rail-ink" : "text-ink-2"}`}>{note}</dd>}
+    </motion.div>
   );
 }
 
@@ -191,6 +208,7 @@ function ChartCard<T>({
 
 function OnTimeChart({ rows }: { rows: OnTimeRow[] }) {
   const animate = useGrowOnce();
+  const { ACCENT, GRID, TEXT, CURSOR, AXIS } = useChartColors();
   const data = rows.map((r) => ({ ...r, label: `${r.on_time_pct}%` }));
   return (
     <div aria-hidden className="h-[180px]">
@@ -198,10 +216,10 @@ function OnTimeChart({ rows }: { rows: OnTimeRow[] }) {
         <BarChart data={data} layout="vertical" margin={{ left: 8, right: 56, top: 4, bottom: 4 }} barCategoryGap={18}>
           <CartesianGrid horizontal={false} stroke={GRID} />
           <XAxis type="number" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} tick={AXIS} axisLine={false} tickLine={false} />
-          <YAxis type="category" dataKey="group_name" width={170} tick={{ ...AXIS, fill: "#14181d" }} axisLine={false} tickLine={false} />
-          <Tooltip cursor={{ fill: "#eef0f2" }} content={<OnTimeTip />} />
-          <Bar dataKey="on_time_pct" fill={ACCENT} radius={[0, 4, 4, 0]} isAnimationActive={animate} animationDuration={600} animationEasing="ease-out">
-            <LabelList dataKey="label" position="right" style={{ ...AXIS, fill: "#14181d", fontWeight: 600 }} />
+          <YAxis type="category" dataKey="group_name" width={170} tick={{ ...AXIS, fill: TEXT }} axisLine={false} tickLine={false} />
+          <Tooltip cursor={{ fill: CURSOR }} content={<OnTimeTip />} />
+          <Bar dataKey="on_time_pct" fill={ACCENT} radius={[0, 6, 6, 0]} isAnimationActive={animate} animationDuration={600} animationEasing="ease-out">
+            <LabelList dataKey="label" position="right" style={{ ...AXIS, fill: TEXT, fontWeight: 600 }} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -256,6 +274,7 @@ const causeList = (r: DelayCauseRow) =>
 
 function CausesCharts({ rows }: { rows: DelayCauseRow[] }) {
   const animate = useGrowOnce();
+  const { INK, TEXT, CURSOR, BORDER, SURFACE, AXIS } = useChartColors();
   const max = Math.max(1, ...rows.flatMap((r) => Object.values(r.minutes_by_cause).map((v) => v ?? 0)));
   return (
     <div aria-hidden className="grid gap-6 sm:grid-cols-2">
@@ -271,9 +290,9 @@ function CausesCharts({ rows }: { rows: DelayCauseRow[] }) {
                 <BarChart data={data} layout="vertical" margin={{ left: 0, right: 40, top: 0, bottom: 0 }} barCategoryGap={6}>
                   <XAxis type="number" hide domain={[0, max]} />
                   <YAxis type="category" dataKey="cause" width={104} tick={{ ...AXIS, fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{ fill: "#eef0f2" }} formatter={(v) => [`${v} min`, "Delay"]} contentStyle={{ border: "1px solid #b9c0c7", borderRadius: 6, fontSize: 13 }} />
-                  <Bar dataKey="minutes" fill={INK} radius={[0, 4, 4, 0]} isAnimationActive={animate} animationDuration={600} animationEasing="ease-out">
-                    <LabelList dataKey="minutes" position="right" style={{ ...AXIS, fontSize: 12, fill: "#14181d" }} />
+                  <Tooltip cursor={{ fill: CURSOR }} formatter={(v) => [`${v} min`, "Delay"]} contentStyle={{ border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 13, background: SURFACE, color: TEXT }} />
+                  <Bar dataKey="minutes" fill={INK} radius={[0, 6, 6, 0]} isAnimationActive={animate} animationDuration={600} animationEasing="ease-out">
+                    <LabelList dataKey="minutes" position="right" style={{ ...AXIS, fontSize: 12, fill: TEXT }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
