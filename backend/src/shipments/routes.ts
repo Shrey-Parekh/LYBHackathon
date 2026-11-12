@@ -14,6 +14,7 @@ import {
   EventRequest,
   EventResponse,
   RiskLevel,
+  RoadConditionsResponse,
   RouteDetail,
   ShipmentDetail,
   ShipmentStatus,
@@ -31,6 +32,7 @@ import {
   type ShipmentRow,
   type SnapshotRow,
 } from './repo';
+import { RoadConditions } from './roadConditions';
 
 const IdParams = z.object({ id: z.string().min(1).max(40) });
 const ALL = ['COORDINATOR', 'DRIVER', 'CUSTOMER'] as const;
@@ -76,6 +78,7 @@ export function shipmentSummary(ctx: Ctx, user: AuthUser, s: ShipmentRow) {
     open_alert: alert ? alertToApi(alert) : null,
     open_alert_id: alert?.id ?? null,
     version: s.version,
+    ...(ctx.liveRouteDemo?.isLiveShipment(s.id) ? { live_demo: true } : {}),
   };
 }
 
@@ -143,11 +146,13 @@ export function shipmentDetail(ctx: Ctx, user: AuthUser, s: ShipmentRow) {
       reported_at: d.reported_at,
       cleared_at: d.cleared_at,
     })),
+    ...(ctx.liveRouteDemo?.isLiveShipment(s.id) ? { live_traffic: ctx.liveRouteDemo.traffic(s.active_route_id, s.last_progress_km) } : {}),
   };
 }
 
 export function registerShipmentRoutes(app: FastifyInstance, ctx: Ctx, reg: RegisteredRoute[]) {
   const { db } = ctx;
+  const roadConditions = ctx.config.tomTomApiKey && new RoadConditions(ctx.config.tomTomApiKey);
 
   defineRoute<Record<string, never>, { status?: string; risk_level?: string }>(app, ctx, reg, {
     method: 'GET',
@@ -176,6 +181,25 @@ export function registerShipmentRoutes(app: FastifyInstance, ctx: Ctx, reg: Regi
       const s = getVisibleShipment(db, user!, params.id);
       if (!s) throw notFound('Shipment not found');
       return { status: 200, body: shipmentDetail(ctx, user!, s) };
+    },
+  });
+
+  defineRoute<{ id: string }>(app, ctx, reg, {
+    method: 'GET',
+    url: '/shipments/:id/road-conditions',
+    roles: [...ALL],
+    summary: 'TomTom traffic flow samples and reported incidents near the remaining live route',
+    params: IdParams,
+    responses: { 200: RoadConditionsResponse, 404: ErrorResponse },
+    handler: async ({ user, params }) => {
+      const shipment = getVisibleShipment(db, user!, params.id);
+      if (!roadConditions || !shipment || shipment.status !== 'IN_TRANSIT' || !ctx.liveRouteDemo?.isLiveShipment(shipment.id)) {
+        throw notFound('Road conditions are available for live shipments in transit');
+      }
+      const route = getRoute(db, shipment.active_route_id);
+      if (!route?.geometry) throw notFound('The active route has no geometry');
+      const progress = Math.min(route.total_km, Math.max(0, shipment.last_progress_km ?? 0));
+      return { status: 200, body: await roadConditions.forRoute({ id: route.id, totalKm: route.total_km, geometry: JSON.parse(route.geometry) }, progress) };
     },
   });
 

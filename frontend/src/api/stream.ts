@@ -44,6 +44,7 @@ export function applyHint(qc: QueryClient, hint: StreamHint) {
       qc.invalidateQueries({ queryKey: ["alerts"] });
       qc.invalidateQueries({ queryKey: ["options"] });
       qc.invalidateQueries({ queryKey: ["decisions"] });
+      if (hint.kinds?.includes("status")) qc.invalidateQueries({ queryKey: ["demo-state", "live-route"] });
       break;
     case "notification":
       qc.invalidateQueries({ queryKey: ["notifications"] });

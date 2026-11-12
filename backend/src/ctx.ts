@@ -6,6 +6,7 @@ import type { Fixtures } from './sim/fixtures';
 import type { StreamHub } from './stream/hub';
 import type { Notifier } from './notify/notifier';
 import type { RouteWeather } from './weather/weather';
+import type { LiveRouteDemo } from './liveRouting/demo';
 
 /** Gives the simulated no-action arrival for a shipment (demo mode only). */
 export interface CounterfactualProvider {
@@ -21,4 +22,9 @@ export interface Ctx {
   notifier: Notifier;
   counterfactual: CounterfactualProvider | null;
   weather: RouteWeather;
+  liveRouteDemo?: LiveRouteDemo;
+}
+
+export function shipmentNow(ctx: Ctx, shipmentId: string): string {
+  return ctx.liveRouteDemo?.isLiveShipment(shipmentId) ? ctx.liveRouteDemo.now() : ctx.clock.nowIso();
 }

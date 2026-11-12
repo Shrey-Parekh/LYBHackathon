@@ -20,11 +20,11 @@ In this repository:
 
 ## Run it
 
-Needs Node 20 or later.
+Use Node 24.15 or later. The [repository launcher](../README.md#run-the-full-app) starts both services for the live demo. For the browser-only demo, run the following in `frontend`. If `.env` already exists, set `VITE_USE_MOCKS=true` and `VITE_DEMO_MODE=true` in that file.
 
-```bash
-npm install
-cp .env.example .env
+```powershell
+npm ci
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
 npm run dev
 ```
 
@@ -36,7 +36,7 @@ Open http://localhost:5173. With `VITE_USE_MOCKS=true` (the default in `.env.exa
 | `npm test` | Vitest component tests |
 | `npm run typecheck` | TypeScript check |
 | `npm run build` | Static build into `dist/` |
-| `npm run sync:api` | Generate `src/api/types.gen.ts` from the API's `/openapi.json` (FastAPI). Pass a URL or file path to use another source |
+| `npm run sync:api` | Generate `src/api/types.gen.ts` from the API's `/openapi.json`. Pass a URL or file path to use another source |
 
 ## Settings (`.env`)
 

@@ -23,7 +23,7 @@ function cumulative(coords: LngLat[]): number[] {
 }
 
 /** km of each vertex: the route's own chainage when it has one per vertex, else the scaled line length. */
-function kmMarks(coords: LngLat[], totalKm: number, chainage?: number[]): number[] {
+export function kmMarks(coords: LngLat[], totalKm: number, chainage?: number[]): number[] {
   if (chainage && chainage.length === coords.length) return chainage;
   const cum = cumulative(coords);
   const lineKm = cum[cum.length - 1];

@@ -139,6 +139,83 @@ export interface ShipmentDetail {
   open_alert: Alert | null;
   active_disruptions: Disruption[];
   version: number;
+  live_traffic?: LiveTraffic;
+}
+
+export interface LiveTraffic {
+  source: "TomTom";
+  status: "LIVE" | "STALE" | "UNAVAILABLE";
+  fetched_at: string | null;
+  drive_minutes: number | null;
+  traffic_delay_min: number | null;
+  sections: { category: string; coordinates: [number, number][] }[];
+}
+
+export interface RoadConditions {
+  route_id: string;
+  fetched_at: string;
+  horizon_km: number;
+  flow_status: "LIVE" | "PARTIAL" | "UNAVAILABLE";
+  incidents_status: "LIVE" | "UNAVAILABLE";
+  flow: {
+    coordinates: [number, number][];
+    at_km: number;
+    to_km: number;
+    current_kph: number;
+    free_flow_kph: number;
+    condition: "FLOWING" | "SLOW" | "HEAVY" | "CLOSED";
+  }[];
+  incidents: {
+    id: string;
+    category: string;
+    description: string | null;
+    roads: string[];
+    delay_min: number | null;
+    at_km: number;
+    location: [number, number];
+  }[];
+}
+
+export interface LiveRouteState {
+  configured: boolean;
+  presets: LiveShipmentDraft[];
+  available_drivers: number;
+  shipments: LiveRouteTrip[];
+}
+
+export type LiveDemoArea = "mumbai" | "regional";
+export type LiveRouteSource = { preset_id: string } | { seed: number; area: LiveDemoArea };
+
+export interface EvPreview {
+  distance_km: number;
+  travel_min: number;
+  charging_min: number;
+  consumption_kwh: number;
+  arrival_charge_pct: number;
+  reserve_pct: number;
+  battery_kwh: number;
+  stops: { name: string | null; charging_min: number }[];
+}
+
+export interface LiveShipmentDraft {
+  preset_id: string | null;
+  seed: number | null;
+  area: LiveDemoArea;
+  lane: string;
+  customer_name: string;
+  product: string;
+  quantity_t: number;
+  gross_t: number;
+  stop_min: number;
+  promise_buffer_min: number;
+  vehicle: { label: string; tare_t: number; max_gross_t: number; height_m: number; width_m: number; length_m: number };
+}
+
+export interface LiveRouteTrip {
+  shipment_id: string;
+  driver_name: string;
+  status: ShipmentStatus;
+  draft: LiveShipmentDraft;
 }
 
 /** GET /shipments — PROPOSED list item ("list with current ETA summary", 5.5) */
@@ -154,6 +231,7 @@ export interface ShipmentSummary {
   current_eta: EtaSnapshot | null;
   open_alert: Alert | null;
   version: number;
+  live_demo?: boolean;
 }
 
 /** GET /routes/:id — ENTITY (5.2 routes, route_segments, route_alternatives) */

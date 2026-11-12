@@ -27,6 +27,8 @@ import { DEFAULT_WEATHER_CONFIG, RouteWeather } from './weather/weather';
 import { registerWeatherRoutes } from './weather/routes';
 import { recomputeEta } from './shipments/recompute';
 import type { PendingHint } from './stream/hub';
+import { LiveRouteDemo } from './liveRouting/demo';
+import { registerLiveRouteDemo } from './liveRouting/routes';
 
 export interface BuildOptions {
   config: AppConfig;
@@ -58,12 +60,15 @@ export async function buildApp(opts: BuildOptions): Promise<Built> {
     notifier: new InAppNotifier(),
     counterfactual: null,
     weather: new RouteWeather(
-      () => (db.prepare('SELECT id, name, total_km, geometry FROM routes').all() as { id: string; name: string; total_km: number; geometry: string | null }[])
+      () => (db.prepare(`SELECT id, name, total_km, geometry FROM routes
+        WHERE id NOT LIKE 'LIVE-%' OR id IN (SELECT active_route_id FROM shipments WHERE status = 'IN_TRANSIT')`)
+        .all() as { id: string; name: string; total_km: number; geometry: string | null }[])
         .map((r) => ({ ...r, geometry: r.geometry ? JSON.parse(r.geometry) : null })),
       fixtures.config.weather ?? DEFAULT_WEATHER_CONFIG,
     ),
   };
   const sim = simClock ? new Simulator(ctx, simClock, opts.autoTick ?? true) : null;
+  if (sim) ctx.liveRouteDemo = new LiveRouteDemo(ctx, opts.autoTick ?? true);
   ctx.counterfactual = sim;
 
   // Demo mode always starts from the seed; otherwise seed only an empty database.
@@ -105,6 +110,7 @@ export async function buildApp(opts: BuildOptions): Promise<Built> {
   registerStreamRoutes(app, ctx, reg);
   registerWeatherRoutes(app, ctx, reg);
   if (sim && simClock) registerDemoRoutes(app, ctx, reg, sim, simClock);
+  if (ctx.liveRouteDemo) registerLiveRouteDemo(app, ctx, reg, ctx.liveRouteDemo);
 
   const openapi = buildOpenApi(reg);
   app.get('/openapi.json', async () => openapi);
@@ -136,6 +142,7 @@ export async function buildApp(opts: BuildOptions): Promise<Built> {
     close: async () => {
       timers.forEach(clearInterval);
       sim?.shutdown();
+      ctx.liveRouteDemo?.reset();
       await app.close();
       db.close();
     },

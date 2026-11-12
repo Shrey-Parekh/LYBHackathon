@@ -3,7 +3,7 @@
 // notifications and audit rows all happen in one transaction. Stream hints are sent after commit.
 import { audit } from '../audit';
 import type { AuthUser } from '../auth/policy';
-import type { Ctx } from '../ctx';
+import { shipmentNow, type Ctx } from '../ctx';
 import type { ShipmentStatusName } from '../eta/types';
 import { ApiError, forbidden, notFound, validationFailed } from '../http/errors';
 import type { EventRequest } from '../http/schemas';
@@ -24,6 +24,7 @@ export interface IngestInput {
   event: EventRequest;
   source: 'HTTP' | 'SIMULATOR';
   actor: AuthUser | null; // null only for the simulator
+  pendingHints?: PendingHint[]; // used by a caller that owns the outer transaction
 }
 
 export interface EventResult {
@@ -53,7 +54,7 @@ export function checkEventPermission(actor: AuthUser, s: Pick<ShipmentRow, 'driv
 export function ingestEvent(ctx: Ctx, input: IngestInput): { status: 200 | 201; body: EventResult } {
   const { db } = ctx;
   const ev = input.event;
-  const now = ctx.clock.nowIso();
+  const now = shipmentNow(ctx, input.shipment_id);
   // In demo mode the server stamps every HTTP event, because a phone's clock is not the simulated clock.
   const occurredAt = input.source === 'HTTP' && ctx.config.demoMode ? now : (ev.occurred_at ?? now);
   const actorId = input.actor?.id ?? null;
@@ -113,7 +114,8 @@ export function ingestEvent(ctx: Ctx, input: IngestInput): { status: 200 | 201; 
     }
     throw err;
   }
-  ctx.hub.publish(hints);
+  if (input.pendingHints) input.pendingHints.push(...hints);
+  else ctx.hub.publish(hints);
   return outcome;
 }
 
@@ -147,7 +149,9 @@ function applyEvent(ctx: Ctx, s: ShipmentRow, ev: EventRequest, at: string, now:
       db.prepare(`UPDATE shipment_events SET apply_status = 'APPLIED', route_id = ?, progress_km = ? WHERE event_id = ?`).run(
         route.id, km, ev.event_id,
       );
-      bump(ctx, s.id);
+      const passedExit = km !== null && db.prepare(`SELECT 1 FROM route_alternatives
+        WHERE route_id = ? AND exit_km >= ? AND exit_km < ? LIMIT 1`).get(route.id, s.last_progress_km ?? 0, km) !== undefined;
+      bump(ctx, s.id, passedExit);
       return { status: 'APPLIED', snapshotId: recomputeEta(ctx, s.id, now, ev.event_id, 'EVENT', hints) };
     }
     case 'MILESTONE': {
@@ -166,7 +170,7 @@ function applyEvent(ctx: Ctx, s: ShipmentRow, ev: EventRequest, at: string, now:
         });
       if (to === 'ARRIVED' || to === 'CANCELLED') {
         resolveOpenAlert(ctx, s.id, now);
-        if (to === 'ARRIVED') {
+        if (to === 'ARRIVED' && !ctx.liveRouteDemo?.isLiveShipment(s.id)) {
           fillOutcomes(ctx, s.id, at);
           recordDelayCauses(db, s.id);
           hints.push({ hint: { entity: 'dashboard', id: 'dashboard', kinds: ['on_time', 'delay_causes', 'impact'] }, audience: { kind: 'coordinators' } });

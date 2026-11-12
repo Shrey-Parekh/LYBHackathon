@@ -160,11 +160,24 @@ export function computeEta(
       }
     }
     // Step 1: base travel.
-    factors.push({
-      code: 'BASE_TRAVEL',
-      label: 'Remaining drive at normal speed',
-      minutes: Math.round(baseMinutes(state.route, p, state.route.total_km)),
-    });
+    const drive = state.liveRouting?.drive;
+    if (drive) {
+      const traffic = Math.round(drive.trafficMinutes);
+      factors.push({ code: 'BASE_TRAVEL', label: 'Remaining drive estimate (TomTom)', minutes: Math.round(drive.minutes) - traffic });
+      if (traffic > 0) {
+        const f = { code: 'CONGESTION', label: 'Live traffic delay (TomTom)', minutes: traffic, phrase: 'live traffic' };
+        factors.push(strip(f));
+        delays.push(f);
+      }
+      confidence = 'MEDIUM';
+    } else {
+      factors.push({
+        code: 'BASE_TRAVEL',
+        label: state.liveRouting ? 'Estimated remaining drive (live traffic unavailable)' : 'Remaining drive at normal speed',
+        minutes: Math.round(baseMinutes(state.route, p, state.route.total_km)),
+      });
+      if (state.liveRouting) confidence = 'LOW';
+    }
     // Step 2: planned stops.
     const stops = dwellAhead(state.route, p);
     if (stops.length > 0) {
@@ -177,7 +190,7 @@ export function computeEta(
     }
     const active = state.disruptions.filter((d) => onPath(d, state) && (d.at_km === null || d.at_km >= p));
     // Step 3: observed pace, only once moving.
-    if (inTransit) {
+    if (inTransit && !state.liveRouting) {
       slowdown = observedSlowdown(state, now, cfg);
       if (slowdown !== null) {
         let horizonEnd = Math.min(p + cfg.pace_horizon_km, state.route.total_km);
@@ -200,10 +213,14 @@ export function computeEta(
     }
     // Step 4: reported disruptions at or ahead of the truck.
     for (const d of active) {
+      const km = d.at_km;
+      const coveredByTraffic = drive && drive.trafficMinutes > 0 && km !== null && d.route_id === state.route.id
+        && drive.affectedSpans.some((span) => km >= span.fromKm && km <= span.toKm);
+      if (coveredByTraffic && (d.category === 'ACCIDENT' || d.category === 'ROAD_CLOSURE')) continue;
       const f = disruptionFactor(d, p, now, cfg);
       factors.push(strip(f));
       delays.push(f);
-      if (d.estimate_source === 'DEFAULT') confidence = 'MEDIUM';
+      if (d.estimate_source === 'DEFAULT' && confidence === 'HIGH') confidence = 'MEDIUM';
     }
     // Live mode: forecast weather ahead. A driver's weather report wins, so it is not counted twice.
     const fc = state.forecast;

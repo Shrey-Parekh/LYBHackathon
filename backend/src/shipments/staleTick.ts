@@ -15,6 +15,7 @@ export function staleTick(ctx: Ctx): number {
   let n = 0;
   ctx.db.transaction(() => {
     for (const r of rows) {
+      if (ctx.liveRouteDemo?.isLiveShipment(r.id)) continue;
       if (minutesBetween(r.last_position_at, now) > limit) {
         recomputeEta(ctx, r.id, now, null, 'TICK', hints);
         n++;
