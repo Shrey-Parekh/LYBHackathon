@@ -55,6 +55,14 @@ function buildConfig() {
     demo: { speed: 60, position_interval_min: 5, stale_tick_min: 5 },
     // The driver's three-tap report has no location: road problems are placed this far ahead of the truck.
     disruptions: { report_ahead_km: 15 },
+    // Live route weather (Open-Meteo). Thresholds are the team's starting values, stated in database/README.md.
+    weather: {
+      sample_every_km: 40,
+      forecast_hours: 3,
+      refresh_min: 15,
+      moderate: { precipitation_mm: 1, visibility_m: 5000, wind_kmph: 35, delay_min: 10 },
+      severe: { precipitation_mm: 4, visibility_m: 1000, wind_kmph: 50, delay_min: 30 },
+    },
   };
 }
 

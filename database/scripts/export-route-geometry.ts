@@ -1,16 +1,21 @@
-// One-off export of route geometry from the public OSRM demo router.
+// One-off export of route geometry, run while authoring the seed. The output is committed as
+// database/sources/route_geometry.json; nothing in the backend or the generator calls a routing service.
 //
-// Run once while authoring fixtures; the output is committed as
-// database/sources/route_geometry.json. Nothing in the API or the fixture generator
-// calls a routing service. Only coordinates are sent to OSRM.
+// Providers (only coordinates are sent):
+//   osrm (default)  public OSRM demo router, car profile, no key
+//   ors             OpenRouteService, heavy-goods-vehicle profile with a 34 t weight; needs a free key
+//                   in the ORS_API_KEY environment variable (never written to a file)
 //
-// Usage: npx tsx scripts/export-route-geometry.ts (from database/)
+// Usage (from database/): npx tsx scripts/export-route-geometry.ts [--provider ors]
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { SOURCES, haversineKm, round, type LngLat } from './seed-lib';
 
 const OUT = join(SOURCES, 'route_geometry.json');
 const OSRM = 'https://router.project-osrm.org/route/v1/driving/';
+const ORS = 'https://api.openrouteservice.org/v2/directions/driving-hgv/geojson';
+const PROVIDER = process.argv.includes('--provider') ? process.argv[process.argv.indexOf('--provider') + 1] : 'osrm';
+const TRUCK_WEIGHT_T = 34; // the heaviest loaded truck in the seed (SHP-1002)
 const MAX_POINTS = 60;
 
 type LatLng = [number, number];
@@ -25,6 +30,26 @@ const PAIRS: [string, LatLng[], string, LatLng[]][] = [
 ];
 
 async function fetchRoute(points: LatLng[]): Promise<LngLat[]> {
+  return PROVIDER === 'ors' ? fetchOrs(points) : fetchOsrm(points);
+}
+
+async function fetchOrs(points: LatLng[]): Promise<LngLat[]> {
+  const key = process.env.ORS_API_KEY;
+  if (!key) throw new Error('Set ORS_API_KEY (free key from openrouteservice.org) to use --provider ors');
+  const res = await fetch(ORS, {
+    method: 'POST',
+    headers: { Authorization: key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      coordinates: points.map(([lat, lng]) => [lng, lat]),
+      options: { vehicle_type: 'hgv', profile_params: { restrictions: { weight: TRUCK_WEIGHT_T } } },
+    }),
+  });
+  if (!res.ok) throw new Error(`OpenRouteService ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const data = (await res.json()) as { features: { geometry: { coordinates: LngLat[] } }[] };
+  return data.features[0].geometry.coordinates;
+}
+
+async function fetchOsrm(points: LatLng[]): Promise<LngLat[]> {
   const path = points.map(([lat, lng]) => `${lng},${lat}`).join(';');
   const res = await fetch(`${OSRM}${path}?overview=full&geometries=geojson`, { headers: { 'User-Agent': 'fixture-authoring-script' } });
   if (!res.ok) throw new Error(`OSRM ${res.status}`);
@@ -102,7 +127,10 @@ async function main() {
   }
   const out = {
     fictional_endpoints: true,
-    source: 'OSRM demo router (router.project-osrm.org), driving profile, OpenStreetMap data',
+    source:
+      PROVIDER === 'ors'
+        ? `OpenRouteService (openrouteservice.org), driving-hgv profile, weight ${TRUCK_WEIGHT_T} t, OpenStreetMap data`
+        : 'OSRM demo router (router.project-osrm.org), driving profile, OpenStreetMap data',
     exported_on: '2026-11-12',
     method: 'Full geometry fetched once, shared prefix detected, each piece simplified with Douglas-Peucker to at most 60 points per route',
     routes,

@@ -53,5 +53,22 @@
   },
   "disruptions": {
     "report_ahead_km": 15
+  },
+  "weather": {
+    "sample_every_km": 40,
+    "forecast_hours": 3,
+    "refresh_min": 15,
+    "moderate": {
+      "precipitation_mm": 1,
+      "visibility_m": 5000,
+      "wind_kmph": 35,
+      "delay_min": 10
+    },
+    "severe": {
+      "precipitation_mm": 4,
+      "visibility_m": 1000,
+      "wind_kmph": 50,
+      "delay_min": 30
+    }
   }
 }

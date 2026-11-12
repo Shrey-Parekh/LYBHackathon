@@ -44,6 +44,36 @@ npm test                # the seven checks below
 - **Route geometry** comes from a single export from the public OSRM router (OpenStreetMap data) on 12 Nov 2026, simplified to at most 60 points per route. Only coordinates were sent. Nothing calls a routing service at run time.
 - **Plant X** sits on a residential road in Panvel subdistrict, not at any real polymer or petrochemical plant.
 
+## Live data
+
+The seed is fictional and repeatable, but two things come from real, free sources:
+
+| Source | Used for | When |
+|---|---|---|
+| [Open-Meteo](https://open-meteo.com) (no key, non-commercial use) | Weather along each route: rain, visibility and wind for the next 3 hours at points every 40 km | Live, by the backend (`backend/src/weather/`), cached for 15 minutes |
+| OpenStreetMap routing (OSRM, or OpenRouteService with the truck profile) | The shape of each route | Once, when the seed is made (`scripts/export-route-geometry.ts`); committed in `sources/` |
+
+**How weather is graded** (`config.json` → `weather`; the team's starting values):
+
+| Level | Any of these at a point | Suggested delay |
+|---|---|---|
+| Severe | rain ≥ 4 mm/h, visibility < 1,000 m, wind ≥ 50 km/h | 30 min |
+| Moderate | rain ≥ 1 mm/h, visibility < 5,000 m, wind ≥ 35 km/h | 10 min |
+| Clear | none of the above | 0 |
+
+A route takes the level of its worst point.
+
+**Demo mode vs live mode.** In demo mode (`DEMO_MODE=true`, the default) the forecast is shown on the coordinator's Attention page as an *advisory* only, so the four-minute demo gives the same numbers every run. In live mode (`DEMO_MODE=false`) the backend refreshes the forecast every 15 minutes and, for every truck on the road, adds a "Forecast near km N" factor to its ETA when bad weather lies ahead. A driver's own weather report replaces the forecast factor so the same weather is never counted twice. If Open-Meteo cannot be reached, the panel says so and nothing else changes.
+
+**Truck routes from OpenRouteService.** To re-export the routes with the heavy-goods-vehicle profile and a 34 t weight (the heaviest loaded truck in the seed), get a free key at openrouteservice.org, then from `database/`:
+
+```bash
+ORS_API_KEY=<your key> npx tsx scripts/export-route-geometry.ts --provider ors
+npm run seed:generate && npm run seed:validate && npm test
+```
+
+The key is read from the environment only and is never written to a file. Without `--provider ors` the script uses the public OSRM router.
+
 ## Routes and chainage
 
 | Route | Road | `total_km` | Road length (OSRM) |
