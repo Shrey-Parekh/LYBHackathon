@@ -62,6 +62,24 @@ Use the email and password from [`database/seed/users.json`](database/seed/users
 
 Every role has a chat button in the top bar. It answers questions such as "Where is my order?" or "Which shipments are at risk?" from the shipments that person may see, using a language model from Groq. Set `GROQ_API_KEY` in `backend/.env` (free key from console.groq.com/keys) and restart; without the key the panel says the assistant is switched off. Details and limits are in [AI_USAGE.md](backend/AI_USAGE.md#run-time-ai-in-the-product).
 
+### Add an order and choose its truck
+
+Sign in as the coordinator and open **New order**. Pick the customer, product, quantity and promised time, then **Find a truck**. The app lists every candidate with its reason and marks one **Recommended**; nothing is assigned until you click **Approve**.
+
+An order can share a truck that is already planned when all of these hold:
+
+1. the truck has not left the plant;
+2. it is going to the same customer;
+3. it has enough spare payload;
+4. the new order is not promised earlier than the truck's own promise;
+5. the truck's current ETA is at or before the new order's promise.
+
+Otherwise the order gets its own truck: the smallest free vehicle that can carry it, planned to arrive an hour before the promise (and to leave no sooner than an hour from now).
+
+To see it after **Reset to 08:50**: 6 t for Deccan Mouldings, promised the next day at 15:00, is recommended onto SHP-1004 (a 28 t truck carrying 20 t). That avoids a 150 km trip, about ₹6,750 at the seed's ₹45 per km. SHP-1001 is listed as unavailable because it has already left. Ask for 9 t and the shared truck is refused ("Only 8 t spare") in favour of a separate one.
+
+After approval the shipment page shows **Also on this truck**, the customer is notified, a generated invoice has one line per order, and the reset removes the new orders. Not covered: orders for different delivery points on one truck, trucks already on the road, the customer's receiving hours, and assigning a driver to a new truck.
+
 ### Upload and download an invoice
 
 On a shipment's page the coordinator has an **Invoice** card with two ways to add one:

@@ -6,7 +6,7 @@ Every seed file is **fictional data** made for the hackathon. Plant X is a ficti
 
 | Folder | Contents |
 |---|---|
-| [`migrations/`](migrations/) | Plain SQL migrations, applied in name order when the backend starts (`backend/src/db/db.ts`). `002_invoices.sql` adds the table that holds one invoice PDF per shipment |
+| [`migrations/`](migrations/) | Plain SQL migrations, applied in name order when the backend starts (`backend/src/db/db.ts`). `002_invoices.sql` adds the table that holds one invoice PDF per shipment; `003_shipment_orders.sql` records orders added to a truck that was already planned |
 | [`seed/`](seed/) | The seed the backend loads (`backend/src/sim/fixtures.ts`): `config.json`, `users.json`, `customers.json`, `transporters.json`, `routes.json`, `history.json`, `scenario-main.json` |
 | [`scripts/`](scripts/) | `generate-seed.ts` (writes `seed/`), `validate-seed.ts` (schema and consistency checks), `export-route-geometry.ts` (one-off map export, already run), `seed-lib.ts` (shared helpers) |
 | [`schemas/`](schemas/) | One JSON Schema per seed file |

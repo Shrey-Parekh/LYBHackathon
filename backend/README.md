@@ -45,6 +45,7 @@ The API loads `../database/seed/` when its scenario file exists and otherwise us
 | `src/liveRouting` | Live shipment presets, seeded generation, simulated truck positions and TomTom requests | [Live demo](../README.md#run-a-live-shipment) |
 | `src/assistant` | Order-tracking assistant: per-user shipment summary sent to Groq (the only language-model call) | 2.3, [AI_USAGE.md](AI_USAGE.md) |
 | `src/invoices` | Invoice PDF: generate from the shipment (`invoicePdf.ts`, no PDF library) or upload, both coordinator only; download for the coordinator and the shipment's customer | 2.3 |
+| `src/orders` | New orders: candidate trucks with reasons (share a planned truck to the same customer, or a separate one) and the coordinator's approval. The rules are listed at the top of `plan.ts` | [Run guide](../README.md#add-an-order-and-choose-its-truck) |
 | `src/auth` | scrypt passwords, HS256 tokens, `scopeFor(user)`, login rate limit | 9.1 |
 | `src/stream` | Server-sent change hints | 5.8 |
 | `src/dashboard` | On-time, delay causes, impact metrics | 10.3 |

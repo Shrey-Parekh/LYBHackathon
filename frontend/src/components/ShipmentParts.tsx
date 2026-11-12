@@ -152,7 +152,7 @@ export function ExtraOrders({ shipment }: { shipment: { order: { id: string }; e
       <ul className="mt-1 space-y-1">
         {shipment.extra_orders.map((o) => (
           <li key={o.id} className="tnum text-body text-ink-2">
-            <span className="font-medium text-ink">{o.id}</span> · {o.quantity_t} t {o.product.toLowerCase()} · promised {dateTimeTz(o.promised_by)}
+            <span className="font-medium text-ink">{o.id}</span> · {o.quantity_t} t {o.product} · promised {dateTimeTz(o.promised_by)}
           </li>
         ))}
       </ul>
