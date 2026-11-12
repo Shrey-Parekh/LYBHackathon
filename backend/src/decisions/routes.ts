@@ -12,13 +12,14 @@ import { decide, type DecisionInput } from './decide';
 const IdParams = z.object({ id: z.string().min(1).max(40) });
 
 function ledgerEntry(ctx: Ctx, row: Record<string, string | null>) {
-  const set = ctx.db.prepare('SELECT options FROM option_sets WHERE id = ?').get(row.option_set_id) as { options: string };
+  const set = ctx.db.prepare('SELECT * FROM option_sets WHERE id = ?').get(row.option_set_id) as Parameters<typeof optionSetToApi>[0];
   return {
     ...JSON.parse(row.result!),
     option_set_id: row.option_set_id,
     option_id: row.option_id,
     note: row.note,
     options: JSON.parse(set.options),
+    option_set: optionSetToApi(set),
     outcome: row.outcome ? JSON.parse(row.outcome) : null,
   };
 }

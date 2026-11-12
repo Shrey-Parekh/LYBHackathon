@@ -182,6 +182,7 @@ export const LedgerEntry = DecisionResponse.extend({
   option_id: z.string(),
   note: z.string().nullable(),
   options: z.array(Option),
+  option_set: OptionSet,
 });
 
 // ---- Shipments ----
@@ -220,11 +221,14 @@ export const ShipmentSummary = z.object({
   customer_id: z.string(),
   customer_name: z.string(),
   transporter_name: z.string(),
+  destination_name: z.string(),
   vehicle_reg: z.string(),
   status: ShipmentStatus,
   active_route_id: z.string(),
   promised_by: IsoTime,
-  current_eta: EtaSummary.nullable(),
+  last_position: Position.nullable(),
+  current_eta: EtaSnapshot.nullable(),
+  open_alert: Alert.nullable(),
   open_alert_id: z.string().nullable(),
   version: z.number().int(),
 });
@@ -242,10 +246,15 @@ export const ShipmentDetail = z.object({
     original_promised_by: IsoTime,
     agreed_delivery_by: IsoTime,
   }),
+  customer_name: z.string(),
+  destination_name: z.string(),
   transporter: z.object({ id: z.string(), name: z.string() }),
+  transporter_id: z.string(),
+  transporter_name: z.string(),
   vehicle_reg: z.string(),
   /** Omitted (null) for customers: they never receive driver names or phone numbers. */
   driver: z.object({ id: z.string(), name: z.string(), phone: z.string().nullable() }).nullable(),
+  driver_name: z.string().optional(),
   quantity_t: z.number(),
   gross_t: z.number(),
   planned_route_id: z.string(),
@@ -284,6 +293,7 @@ export const RouteDetail = z.object({
 // ---- Notifications ----
 export const Notification = z.object({
   id: z.string(),
+  user_id: z.string(),
   shipment_id: z.string().nullable(),
   kind: NotificationKind,
   title: z.string(),
@@ -298,44 +308,47 @@ export const DemoClockRequest = z.object({
   paused: z.boolean().optional(),
 });
 export const DemoState = z.object({
-  clock: z.object({ now: IsoTime, speed: z.number(), paused: z.boolean(), mode: z.enum(['REAL', 'SIMULATED']) }),
-  scenario: z.object({
-    id: z.string().nullable(),
-    status: z.enum(['IDLE', 'RUNNING', 'PAUSED', 'FINISHED']),
-    next_pause_at: IsoTime.nullable(),
-  }),
+  clock: IsoTime,
+  speed: z.number(),
+  paused: z.boolean(),
+  mode: z.enum(['REAL', 'SIMULATED']),
+  scenario_id: z.string().nullable(),
+  scenario_status: z.enum(['IDLE', 'RUNNING', 'PAUSED', 'WAITING_FOR_PRESENTER', 'FINISHED']),
+  waiting_for: z.string().nullable(),
+  next_pause_at: IsoTime.nullable(),
 });
 
 // ---- Dashboard and metrics (10.3) ----
 export const GroupBy = z.enum(['route', 'transporter']);
-export const OnTimeResponse = z.object({
-  group_by: GroupBy,
-  measured_against: z.literal('original_promised_by'),
-  groups: z.array(
-    z.object({
-      group_id: z.string(),
-      group_name: z.string(),
-      arrived: z.number().int(),
-      on_time: z.number().int(),
-      late: z.number().int(),
-      on_time_pct: z.number().nullable(),
-    }),
-  ),
-  totals: z.object({ arrived: z.number().int(), on_time: z.number().int(), late: z.number().int(), on_time_pct: z.number().nullable() }),
-});
-export const DelayCausesResponse = z.object({
-  group_by: GroupBy,
-  groups: z.array(
-    z.object({
-      group_id: z.string(),
-      group_name: z.string(),
-      causes: z.array(z.object({ cause: z.string(), minutes: z.number().int() })),
-      total_min: z.number().int(),
-    }),
-  ),
-});
+/** On time is measured against the original promise. */
+export const OnTimeResponse = z.array(
+  z.object({
+    group_id: z.string(),
+    group_name: z.string(),
+    delivered: z.number().int(),
+    on_time: z.number().int(),
+    late: z.number().int(),
+    on_time_pct: z.number().nullable(),
+  }),
+);
+export const DelayCausesResponse = z.array(
+  z.object({
+    group_id: z.string(),
+    group_name: z.string(),
+    minutes_by_cause: z.record(z.string(), z.number().int()),
+    total_min: z.number().int(),
+  }),
+);
 export const ImpactResponse = z.object({
   fictional: z.literal(true),
+  warning_lead_time_median_min: z.number().nullable(),
+  eta_error_mean_min: z.number().nullable(),
+  alert_precision: z.number().nullable(),
+  alert_recall: z.number().nullable(),
+  delay_avoided_total_min: z.number().nullable(),
+  on_time_pct_with_decisions: z.number().nullable(),
+  on_time_pct_without_decisions: z.number().nullable(),
+  cost_of_lateness_avoided_inr: z.number().nullable(),
   warning_lead_time: z.object({
     kind: z.literal('OBSERVED_IN_REPLAY'),
     median_min: z.number().nullable(),

@@ -38,7 +38,8 @@ const ALL = ['COORDINATOR', 'DRIVER', 'CUSTOMER'] as const;
 function names(ctx: Ctx, s: ShipmentRow) {
   const c = ctx.db.prepare('SELECT name FROM customers WHERE id = ?').get(s.customer_id) as { name: string };
   const t = ctx.db.prepare('SELECT name FROM transporters WHERE id = ?').get(s.transporter_id) as { name: string };
-  return { customer_name: c.name, transporter_name: t.name };
+  const r = ctx.db.prepare('SELECT destination FROM routes WHERE id = ?').get(s.planned_route_id) as { destination: string } | undefined;
+  return { customer_name: c.name, transporter_name: t.name, destination_name: r?.destination ?? '' };
 }
 
 /** The open alert as this user may see it: customers see it only at HIGH (DESIGN.md 5.4). */
@@ -49,31 +50,31 @@ function visibleOpenAlert(ctx: Ctx, user: AuthUser, shipmentId: string): AlertRo
   return a;
 }
 
+function lastPosition(s: ShipmentRow) {
+  return s.last_position_at !== null && s.last_lat !== null && s.last_lng !== null
+    ? { lat: s.last_lat, lng: s.last_lng, progress_km: s.last_progress_km, occurred_at: s.last_position_at }
+    : null;
+}
+
 export function shipmentSummary(ctx: Ctx, user: AuthUser, s: ShipmentRow) {
   const snap = getSnapshot(ctx.db, s.current_eta_snapshot_id);
   const n = names(ctx, s);
+  const alert = visibleOpenAlert(ctx, user, s.id);
   return {
     id: s.id,
     order_id: s.order_id,
     customer_id: s.customer_id,
     customer_name: n.customer_name,
     transporter_name: n.transporter_name,
+    destination_name: n.destination_name,
     vehicle_reg: s.vehicle_reg,
     status: s.status,
     active_route_id: s.active_route_id,
     promised_by: s.agreed_delivery_by,
-    current_eta: snap
-      ? {
-          id: snap.id,
-          eta: snap.eta,
-          risk_score: snap.risk_score,
-          risk_level: snap.risk_level,
-          confidence: snap.confidence,
-          slack_min: snap.slack_min,
-          headline: snap.headline,
-        }
-      : null,
-    open_alert_id: visibleOpenAlert(ctx, user, s.id)?.id ?? null,
+    last_position: lastPosition(s),
+    current_eta: snap ? snapshotToApi(snap) : null,
+    open_alert: alert ? alertToApi(alert) : null,
+    open_alert_id: alert?.id ?? null,
     version: s.version,
   };
 }
@@ -112,9 +113,15 @@ export function shipmentDetail(ctx: Ctx, user: AuthUser, s: ShipmentRow) {
     status: s.status,
     version: s.version,
     order: { ...order, customer_name: n.customer_name },
+    customer_name: n.customer_name,
+    destination_name: n.destination_name,
     transporter: { id: s.transporter_id, name: n.transporter_name },
+    transporter_id: s.transporter_id,
+    transporter_name: n.transporter_name,
     vehicle_reg: s.vehicle_reg,
     driver,
+    // Absent for customers: they never receive driver details (DESIGN.md 5.4).
+    ...(driver ? { driver_name: driver.name } : {}),
     quantity_t: s.quantity_t,
     gross_t: s.gross_t,
     planned_route_id: s.planned_route_id,
@@ -122,10 +129,7 @@ export function shipmentDetail(ctx: Ctx, user: AuthUser, s: ShipmentRow) {
     alternative_route_ids: getAlternatives(db, s.planned_route_id).map((a) => a.alt_route_id),
     planned_departure: s.planned_departure,
     milestones,
-    last_position:
-      s.last_position_at !== null && s.last_lat !== null && s.last_lng !== null
-        ? { lat: s.last_lat, lng: s.last_lng, progress_km: s.last_progress_km, occurred_at: s.last_position_at }
-        : null,
+    last_position: lastPosition(s),
     current_eta: snap ? snapshotToApi(snap) : null,
     open_alert: alert ? alertToApi(alert) : null,
     active_disruptions: disruptions.map((d) => ({

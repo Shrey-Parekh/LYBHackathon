@@ -8,14 +8,27 @@ import { DemoClockRequest, DemoState, ErrorResponse } from '../http/schemas';
 import type { SimulatedClock } from './clock';
 import type { Simulator } from './simulator';
 
-export function demoState(sim: Simulator, clock: SimulatedClock) {
+/**
+ * Demo state as the web app reads it. A replay stopped on one of the scenario's pause beats reports
+ * WAITING_FOR_PRESENTER with that beat's label.
+ */
+export function demoState(sim: Simulator, clock: SimulatedClock, pauseLabels: Record<string, string> = {}) {
+  const now = clock.nowIso();
+  const atBeat = sim.status === 'PAUSED' && now in pauseLabels;
   return {
-    clock: { now: clock.nowIso(), speed: clock.speed, paused: clock.paused, mode: clock.mode },
-    scenario: { id: sim.scenarioId, status: sim.status, next_pause_at: sim.nextPauseAt },
+    clock: now,
+    speed: clock.speed,
+    paused: clock.paused,
+    mode: clock.mode,
+    scenario_id: sim.scenarioId,
+    scenario_status: atBeat ? ('WAITING_FOR_PRESENTER' as const) : sim.status,
+    waiting_for: atBeat ? pauseLabels[now] : null,
+    next_pause_at: sim.nextPauseAt,
   };
 }
 
 export function registerDemoRoutes(app: FastifyInstance, ctx: Ctx, reg: RegisteredRoute[], sim: Simulator, clock: SimulatedClock) {
+  const state = () => demoState(sim, clock, ctx.fixtures.scenario.pause_labels ?? {});
   const publishDemo = (kind: string) =>
     ctx.hub.publish([{ hint: { entity: 'demo', id: 'main', kinds: [kind] }, audience: { kind: 'all' } }]);
 
@@ -27,7 +40,7 @@ export function registerDemoRoutes(app: FastifyInstance, ctx: Ctx, reg: Register
     responses: { 200: DemoState },
     handler: ({ user }) => {
       sim.reset(user!.id);
-      return { status: 200, body: demoState(sim, clock) };
+      return { status: 200, body: state() };
     },
   });
 
@@ -42,7 +55,7 @@ export function registerDemoRoutes(app: FastifyInstance, ctx: Ctx, reg: Register
       if (params.id !== ctx.fixtures.scenario.scenario_id) throw notFound('Scenario not found');
       sim.start(params.id);
       publishDemo('started');
-      return { status: 200, body: demoState(sim, clock) };
+      return { status: 200, body: state() };
     },
   });
 
@@ -56,7 +69,7 @@ export function registerDemoRoutes(app: FastifyInstance, ctx: Ctx, reg: Register
     handler: ({ body }) => {
       sim.setClock(body);
       publishDemo('clock');
-      return { status: 200, body: demoState(sim, clock) };
+      return { status: 200, body: state() };
     },
   });
 
@@ -66,6 +79,6 @@ export function registerDemoRoutes(app: FastifyInstance, ctx: Ctx, reg: Register
     roles: ['COORDINATOR'],
     summary: 'Clock time, speed and scenario status',
     responses: { 200: DemoState },
-    handler: () => ({ status: 200, body: demoState(sim, clock) }),
+    handler: () => ({ status: 200, body: state() }),
   });
 }
