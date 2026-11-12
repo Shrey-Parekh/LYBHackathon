@@ -140,6 +140,15 @@ export interface ShipmentDetail {
   active_disruptions: Disruption[];
   version: number;
   live_traffic?: LiveTraffic;
+  /** Coordinators and the customer only (absent for drivers); null until one is uploaded. */
+  invoice?: InvoiceMeta | null;
+}
+
+export interface InvoiceMeta {
+  filename: string;
+  size_bytes: number;
+  uploaded_at: string;
+  uploaded_by_name: string;
 }
 
 export interface LiveTraffic {
@@ -334,7 +343,7 @@ export interface Notification {
   id: string;
   user_id: string;
   shipment_id: string | null;
-  kind: "RISK_MEDIUM" | "RISK_HIGH" | "DECISION_APPLIED" | "BACK_ON_SCHEDULE" | "TRACKING_LOST" | "DELIVERED";
+  kind: "RISK_MEDIUM" | "RISK_HIGH" | "DECISION_APPLIED" | "BACK_ON_SCHEDULE" | "TRACKING_LOST" | "DELIVERED" | "INVOICE_READY";
   title: string;
   body: string;
   created_at: string;

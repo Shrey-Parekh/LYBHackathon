@@ -10,6 +10,7 @@ import { EtaHistory } from "../../components/EtaHistory";
 import { ShipmentRoadMap } from "../../components/ShipmentRoadMap";
 import { LiveTrafficPanel } from "../../components/LiveTrafficPanel";
 import { WeatherPanel } from "../../components/WeatherPanel";
+import { InvoiceCard } from "../../components/InvoiceCard";
 import { AlertBanner, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
 import { OptionsSection } from "../../components/OptionsSection";
 import { clockTz } from "../../lib/time";
@@ -144,6 +145,8 @@ export function ShipmentDetailPage() {
               <KeyValue label="Agreed delivery">{clockTz(s.order.agreed_delivery_by)}</KeyValue>
             </dl>
           </Card>
+
+          <InvoiceCard shipment={s} canUpload />
         </div>
       </div>
 
