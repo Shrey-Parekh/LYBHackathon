@@ -5,7 +5,7 @@ import { ArrowRight, CheckCircle, Bell } from "@phosphor-icons/react";
 import { useShipments } from "../../api/queries";
 import { useRoutes } from "../../api/useShipmentRoutes";
 import type { RiskLevel, ShipmentSummary } from "../../api/contract";
-import { Button, CrossFade, EmptyState, ErrorNote, Loading, RiskIcon, Skeleton, StatusTag } from "../../components/ui";
+import { Button, CountUp, CrossFade, EmptyState, ErrorNote, Loading, RiskIcon, Skeleton, StatusTag } from "../../components/ui";
 import { ShipmentMap, type MapMarker, type MapRoute } from "../../components/ShipmentMap";
 import { RiskCell, isStale, positionText } from "../../components/ShipmentParts";
 import { RISK_WORD } from "../../lib/risk";
@@ -116,9 +116,7 @@ function SummaryTile({ label, value, icon, tone }: { label: string; value: numbe
         {label}
       </dt>
       <dd className="mt-1">
-        <CrossFade value={value} shift="10px">
-          {(v) => <span className="tnum text-figure font-semibold text-ink">{v}</span>}
-        </CrossFade>
+        <CountUp value={value} className="font-[family-name:var(--font-display)] text-figure font-semibold text-ink" />
       </dd>
     </div>
   );
@@ -159,7 +157,7 @@ function Rows({ rows, routes, selected, onSelect }: { rows: ShipmentSummary[]; r
               </div>
               <div className="col-span-2 min-w-0 sm:col-span-1 sm:col-start-2 sm:row-start-1">
                 <button type="button" onClick={() => onSelect(s.id)} aria-pressed={isSel} className="rounded-sm text-left">
-                  <span className="font-mono text-lead font-semibold tracking-tight text-ink">{s.id}</span>
+                  <span className="whitespace-nowrap font-mono text-lead font-semibold tracking-tight text-ink">{s.id}</span>
                   <span className="ml-2 text-body text-ink-2">{s.customer_name}</span>
                   <span className="sr-only">. Show on map</span>
                 </button>

@@ -54,12 +54,12 @@ export function Login() {
     <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
       {/* Left: what this is, over a muted live map of the Panvel corridor */}
       <section className="relative flex flex-col overflow-hidden bg-rail px-6 py-6 text-rail-ink sm:px-10 lg:min-h-dvh lg:py-10">
-        <div className="relative z-[1] flex items-center gap-2.5 font-semibold text-[#eef2ef]">
+        <div className="relative z-[1] flex items-center gap-2.5 font-semibold text-[#f2f7fb]">
           <Mark />
           Plant X Control Tower
         </div>
         <div className="relative z-[1] mt-12 max-w-[40rem] lg:mt-auto">
-          <motion.h1 {...rise(0)} className="text-[2.25rem] font-semibold leading-[1.08] tracking-[-0.025em] text-[#eef2ef] sm:text-[2.5rem]">
+          <motion.h1 {...rise(0)} className="text-[2.25rem] font-semibold leading-[1.08] tracking-[-0.025em] text-[#f2f7fb] sm:text-[2.5rem]">
             Know which delivery will be late while there is still time to act.
           </motion.h1>
           <motion.p {...rise(1)} className="mt-5 max-w-[30rem] text-lead text-rail-ink">

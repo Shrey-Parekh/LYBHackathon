@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useDelayCauses, useImpact, useOnTime } from "../../api/queries";
 import type { DelayCauseRow, OnTimeRow } from "../../api/contract";
-import { Card, ErrorNote, Loading, Skeleton } from "../../components/ui";
+import { Card, CountUp, ErrorNote, Loading, Skeleton } from "../../components/ui";
 import { CATEGORY_WORD } from "../../lib/risk";
 import { inr } from "../../lib/time";
 import { prefersReducedMotion } from "../../lib/motion";
@@ -29,7 +29,7 @@ function useChartColors() {
     CURSOR: token("--sunken"),
     BORDER: token("--line-strong"),
     SURFACE: token("--raised"),
-    AXIS: { fontSize: 13, fill: token("--muted"), fontFamily: "Geist Variable" },
+    AXIS: { fontSize: 13, fill: token("--muted"), fontFamily: "Figtree Variable" },
   };
 }
 
@@ -147,7 +147,16 @@ function Tile({ label, value, note, headline }: { label: string; value: string; 
       className={`rounded-md px-5 py-4 ${headline ? "bg-rail text-rail-ink" : "bg-raised"}`}
     >
       <dt className={`text-meta ${headline ? "text-rail-muted" : "text-muted"}`}>{label}</dt>
-      <dd className={`tnum mt-1 font-semibold tracking-[-0.02em] ${headline ? "text-[2.75rem] leading-none text-[#eef2ef]" : "text-figure text-ink"}`}>{value}</dd>
+      <dd className={`tnum mt-1 font-[family-name:var(--font-display)] font-semibold tracking-[-0.02em] ${headline ? "text-[2.75rem] leading-none text-[#f2f7fb]" : "text-figure text-ink"}`}>
+        {/^\d+/.test(value) ? (
+          <>
+            <CountUp value={parseInt(value, 10)} />
+            {value.replace(/^\d+/, "")}
+          </>
+        ) : (
+          value
+        )}
+      </dd>
       {note && <dd className={`mt-2 text-meta ${headline ? "text-rail-ink" : "text-ink-2"}`}>{note}</dd>}
     </motion.div>
   );
