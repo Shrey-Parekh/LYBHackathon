@@ -104,13 +104,20 @@ describe('invoices', () => {
 
   it('works out amounts: rate by product, GST split in two, Indian digit grouping', () => {
     const cfg = DEFAULT_INVOICE_RATES;
-    expect(invoiceAmounts({ order_id: 'ORD-5002', product: 'HDPE pellets, bagged', quantity_t: 24 }, cfg)).toEqual({
-      invoice_no: 'INV-5002', hsn: '3901', rate_per_t_inr: 108000, taxable_inr: 2592000, cgst_inr: 233280, sgst_inr: 233280, total_inr: 3058560,
+    const one = (order_id: string, product: string, quantity_t: number) => invoiceAmounts({ order_id, lines: [{ order_id, product, quantity_t }] }, cfg);
+    expect(one('ORD-5002', 'HDPE pellets, bagged', 24)).toMatchObject({
+      invoice_no: 'INV-5002', taxable_inr: 2592000, cgst_inr: 233280, sgst_inr: 233280, total_inr: 3058560,
+      lines: [{ hsn: '3901', rate_per_t_inr: 108000, amount_inr: 2592000 }],
     });
     // "LLDPE" contains "LDPE": the more specific rule comes first.
-    expect(invoiceAmounts({ order_id: 'ORD-1', product: 'LLDPE film grade, bagged', quantity_t: 1 }, cfg).rate_per_t_inr).toBe(110000);
-    expect(invoiceAmounts({ order_id: 'ORD-1', product: 'Polypropylene copolymer, bagged', quantity_t: 1 }, cfg).rate_per_t_inr).toBe(112000);
-    expect(invoiceAmounts({ order_id: 'ORD-LIVE-001', product: 'Mystery resin', quantity_t: 0.6 }, cfg)).toMatchObject({ invoice_no: 'INV-LIVE-001', hsn: '39', taxable_inr: 63000, total_inr: 74340 });
+    expect(one('ORD-1', 'LLDPE film grade, bagged', 1).lines[0].rate_per_t_inr).toBe(110000);
+    expect(one('ORD-1', 'Polypropylene copolymer, bagged', 1).lines[0].rate_per_t_inr).toBe(112000);
+    expect(one('ORD-LIVE-001', 'Mystery resin', 0.6)).toMatchObject({ invoice_no: 'INV-LIVE-001', taxable_inr: 63000, total_inr: 74340, lines: [{ hsn: '39' }] });
+    // Two orders on one truck: one line each, tax on the sum.
+    expect(invoiceAmounts({ order_id: 'ORD-5004', lines: [
+      { order_id: 'ORD-5004', product: 'Polypropylene copolymer, bagged', quantity_t: 20 },
+      { order_id: 'ORD-6001', product: 'Polypropylene homopolymer, bagged', quantity_t: 6 },
+    ] }, cfg)).toMatchObject({ invoice_no: 'INV-5004', taxable_inr: 2864000, cgst_inr: 257760, total_inr: 3379520 });
     expect([inr(999), inr(1000), inr(123456.5), inr(29452800)]).toEqual(['999.00', '1,000.00', '1,23,456.50', '2,94,52,800.00']);
     expect(t.ctx.fixtures.config.invoice).toEqual(cfg); // the seed carries the same figures as the fallback
   });

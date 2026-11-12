@@ -19,7 +19,8 @@ export type AuditAction =
   | 'ASSISTANT_ASKED'
   | 'INVOICE_UPLOADED'
   | 'INVOICE_GENERATED'
-  | 'INVOICE_DOWNLOADED';
+  | 'INVOICE_DOWNLOADED'
+  | 'ORDER_CREATED';
 
 export function audit(
   db: Db,

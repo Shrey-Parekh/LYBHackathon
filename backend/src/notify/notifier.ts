@@ -11,7 +11,8 @@ export type NotificationKind =
   | 'BACK_ON_SCHEDULE'
   | 'TRACKING_LOST'
   | 'DELIVERED'
-  | 'INVOICE_READY';
+  | 'INVOICE_READY'
+  | 'ORDER_CONFIRMED';
 
 export interface NewNotification {
   user_id: string;

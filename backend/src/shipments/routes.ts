@@ -34,6 +34,7 @@ import {
 } from './repo';
 import { RoadConditions } from './roadConditions';
 import { invoiceMeta } from '../invoices/routes';
+import { extraOrders } from '../orders/plan';
 
 const IdParams = z.object({ id: z.string().min(1).max(40) });
 const ALL = ['COORDINATOR', 'DRIVER', 'CUSTOMER'] as const;
@@ -149,6 +150,8 @@ export function shipmentDetail(ctx: Ctx, user: AuthUser, s: ShipmentRow) {
     })),
     ...(ctx.liveRouteDemo?.isLiveShipment(s.id) ? { live_traffic: ctx.liveRouteDemo.traffic(s.active_route_id, s.last_progress_km) } : {}),
     ...(user.role !== 'DRIVER' ? { invoice: invoiceMeta(db, s.id) } : {}),
+    // Orders added to this truck at dispatch; quantity_t above already includes them.
+    extra_orders: extraOrders(db, s.id),
   };
 }
 

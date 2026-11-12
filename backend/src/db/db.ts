@@ -39,6 +39,7 @@ export const DATA_TABLES = [
   'audit_events',
   'notifications',
   'invoices',
+  'shipment_orders',
   'decisions',
   'option_sets',
   'alerts',
