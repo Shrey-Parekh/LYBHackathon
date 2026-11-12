@@ -3,7 +3,7 @@ import { api } from "./client";
 import { streamStatus } from "./stream";
 import type {
   Alert, Decision, DecisionRequest, DelayCauseRow, DemoState, EtaSnapshot, ImpactMetrics, Notification, OnTimeRow,
-  EvPreview, LiveDemoArea, LiveRouteSource, LiveRouteState, LiveRouteTrip, LiveShipmentDraft, OptionSet, RoadConditions, RouteDetail, RouteWeatherResponse, ShipmentDetail, ShipmentSummary,
+  AssistantAnswer, AssistantStatus, ChatTurn, EvPreview, LiveDemoArea, LiveRouteSource, LiveRouteState, LiveRouteTrip, LiveShipmentDraft, OptionSet, RoadConditions, RouteDetail, RouteWeatherResponse, ShipmentDetail, ShipmentSummary,
 } from "./contract";
 
 /*
@@ -110,6 +110,14 @@ export function useEvPreview() {
 /** Real-world forecast: the backend caches it for 15 minutes, so polling every 5 minutes is plenty. */
 export const useRouteWeather = () =>
   useQuery({ queryKey: keys.weather, staleTime: 5 * 60_000, refetchInterval: 5 * 60_000, queryFn: ({ signal }) => api<RouteWeatherResponse>(`/weather/routes`, { signal }) });
+
+/** Is the assistant switched on? Asked once when the chat panel first opens. */
+export const useAssistantStatus = (enabled: boolean) =>
+  useQuery({ queryKey: ["assistant"], enabled, staleTime: Infinity, queryFn: ({ signal }) => api<AssistantStatus>("/assistant", { signal }) });
+
+export function useAskAssistant() {
+  return useMutation({ mutationFn: (body: { question: string; history: ChatTurn[] }) => api<AssistantAnswer>("/assistant/ask", { method: "POST", body }) });
+}
 
 export function useMarkRead() {
   const qc = useQueryClient();

@@ -407,3 +407,19 @@ export interface RouteWeatherResponse {
   error: string | null;
   routes: RouteWeather[];
 }
+
+/* ---- Order-tracking assistant (GET /assistant, POST /assistant/ask) ---- */
+export interface AssistantStatus {
+  configured: boolean;
+  provider: "Groq";
+  model: string;
+}
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+export interface AssistantAnswer {
+  answer: string;
+  provider: "Groq";
+  model: string;
+}
