@@ -1,5 +1,4 @@
 import { useId, useRef, useState } from "react";
-import { motion } from "motion/react";
 import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useDelayCauses, useImpact, useOnTime } from "../../api/queries";
 import type { DelayCauseRow, OnTimeRow } from "../../api/contract";
@@ -75,7 +74,7 @@ export function Dashboard() {
 
       <ImpactPanel q={impact} />
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <ChartCard title={`On-time delivery by ${groupBy}`} q={onTime} table={(rows) => <OnTimeTable rows={rows} groupBy={groupBy} />}>
           {(rows) => <OnTimeChart rows={rows} />}
         </ChartCard>
@@ -100,7 +99,7 @@ function ImpactPanel({ q }: { q: ReturnType<typeof useImpact> }) {
       </div>
       {q.isPending ? (
         <Loading label="Loading impact">
-          <div className="grid gap-px p-5 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-px p-5 sm:grid-cols-4">
             {[0, 1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-16" />
             ))}
@@ -113,7 +112,7 @@ function ImpactPanel({ q }: { q: ReturnType<typeof useImpact> }) {
       ) : m ? (
         <>
           <dl className="grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-            <Tile label="Warning lead time (median)" value={m.warning_lead_time_median_min !== null ? `${m.warning_lead_time_median_min} min` : "—"} note="Before the promised time. Today that is zero: lateness is found out after it happens." headline />
+            <Tile label="Warning lead time (median)" value={m.warning_lead_time_median_min !== null ? `${m.warning_lead_time_median_min} min` : "—"} note="How long before the promised time the coordinator was warned. Without the tower, lateness is found out after it happens." headline />
             <Tile label="Delay avoided by decisions" value={m.delay_avoided_total_min !== null ? `${m.delay_avoided_total_min} min` : "After arrival"} note="Simulated no-action arrival minus actual arrival" />
             <Tile label="On-time delivery" value={m.on_time_pct_with_decisions !== null ? `${m.on_time_pct_with_decisions}%` : "—"} note={m.on_time_pct_without_decisions !== null ? `${m.on_time_pct_without_decisions}% without the decisions (simulated)` : undefined} />
             <Tile label="Cost of lateness avoided" value={m.cost_of_lateness_avoided_inr !== null ? inr(m.cost_of_lateness_avoided_inr) : "After arrival"} note="Modelled estimate" />
@@ -139,16 +138,14 @@ function ImpactPanel({ q }: { q: ReturnType<typeof useImpact> }) {
 }
 
 function Tile({ label, value, note, headline }: { label: string; value: string; note?: string; headline?: boolean }) {
+  const pending = value === "After arrival";
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className={`rounded-md px-5 py-4 ${headline ? "bg-rail text-rail-ink" : "bg-raised"}`}
-    >
+    <div className={`rounded-md px-5 py-4 ${headline ? "bg-rail text-rail-ink" : "bg-raised"}`}>
       <dt className={`text-meta ${headline ? "text-rail-muted" : "text-muted"}`}>{label}</dt>
       <dd className={`tnum mt-1 wide font-[800] tracking-[-0.03em] ${headline ? "text-[2.75rem] leading-none text-[#f2f7fb]" : "text-figure text-ink"}`}>
-        {/^\d+/.test(value) ? (
+        {pending ? (
+          <span className="text-lead font-semibold not-italic text-muted [font-stretch:100%]">Shown after delivery</span>
+        ) : /^\d+/.test(value) ? (
           <>
             <CountUp value={parseInt(value, 10)} />
             {value.replace(/^\d+/, "")}
@@ -158,7 +155,7 @@ function Tile({ label, value, note, headline }: { label: string; value: string; 
         )}
       </dd>
       {note && <dd className={`mt-2 text-meta ${headline ? "text-rail-ink" : "text-ink-2"}`}>{note}</dd>}
-    </motion.div>
+    </div>
   );
 }
 
@@ -286,7 +283,7 @@ function CausesCharts({ rows }: { rows: DelayCauseRow[] }) {
   const { INK, TEXT, CURSOR, BORDER, SURFACE, AXIS } = useChartColors();
   const max = Math.max(1, ...rows.flatMap((r) => Object.values(r.minutes_by_cause).map((v) => v ?? 0)));
   return (
-    <div aria-hidden className="grid gap-6 sm:grid-cols-2">
+    <div aria-hidden className="grid grid-cols-1 gap-6 sm:grid-cols-2">
       {rows.map((r) => {
         const data = causeList(r);
         const total = data.reduce((s, d) => s + d.minutes, 0);

@@ -8,6 +8,11 @@ import { ErrorResponse, LoginRequest, LoginResponse, User } from '../http/schema
 import { verifyPassword } from './password';
 import type { AuthUser } from './policy';
 import { issueToken } from './token';
+import { z } from 'zod';
+
+const DemoAccounts = z.array(
+  z.object({ id: z.string(), name: z.string(), role: z.enum(['COORDINATOR', 'DRIVER', 'CUSTOMER']), org: z.string() }),
+);
 
 /** Login attempts allowed per client address per minute (real time, in memory). */
 export const LOGIN_LIMIT_PER_MIN = 10;
@@ -63,6 +68,48 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Ctx, reg: Register
       return { status: 200, body: { token: issueToken(user.id, user.role, ctx.config.jwtSecret, Date.now()), user: toPublicUser(user) } };
     },
   });
+
+  // Demo mode only: one-tap sign-in for the seeded fictional accounts, so a presenter can switch roles
+  // without typing passwords. These two routes do not exist when DEMO_MODE is off.
+  if (ctx.config.demoMode) {
+    defineRoute(app, ctx, reg, {
+      method: 'GET',
+      url: '/auth/demo-accounts',
+      roles: 'PUBLIC',
+      summary: 'Demo mode only: the seeded accounts offered for one-tap sign-in',
+      responses: { 200: DemoAccounts },
+      handler: () => {
+        const rows = ctx.db
+          .prepare(
+            `SELECT u.id, u.name, u.role, COALESCE(c.name, t.name, 'Plant X') AS org
+             FROM users u LEFT JOIN customers c ON c.id = u.customer_id LEFT JOIN transporters t ON t.id = u.transporter_id
+             ORDER BY CASE u.role WHEN 'COORDINATOR' THEN 0 WHEN 'DRIVER' THEN 1 ELSE 2 END, u.name`,
+          )
+          .all();
+        return { status: 200, body: rows as z.infer<typeof DemoAccounts> };
+      },
+    });
+
+    defineRoute<Record<string, never>, Record<string, never>, { user_id: string }>(app, ctx, reg, {
+      method: 'POST',
+      url: '/auth/demo-login',
+      roles: 'PUBLIC',
+      summary: 'Demo mode only: sign in as a seeded account without a password',
+      body: z.object({ user_id: z.string().min(1).max(80) }),
+      responses: { 200: LoginResponse, 404: ErrorResponse, 429: ErrorResponse },
+      handler: ({ body, raw }) => {
+        if (!limiter.allow(raw.ip, Date.now())) {
+          throw new ApiError(429, 'RATE_LIMITED', 'Too many sign-in attempts. Try again in a minute.');
+        }
+        const user = ctx.db
+          .prepare('SELECT id, name, email, role, customer_id, transporter_id FROM users WHERE id = ?')
+          .get(body.user_id) as AuthUser | undefined;
+        if (!user) throw new ApiError(404, 'NOT_FOUND', 'No such demo account');
+        audit(ctx.db, ctx.clock.nowIso(), user.id, 'DEMO_LOGIN', 'user', user.id, {});
+        return { status: 200, body: { token: issueToken(user.id, user.role, ctx.config.jwtSecret, Date.now()), user: toPublicUser(user) } };
+      },
+    });
+  }
 
   defineRoute(app, ctx, reg, {
     method: 'GET',

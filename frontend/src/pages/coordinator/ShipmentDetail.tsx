@@ -70,18 +70,18 @@ export function ShipmentDetailPage() {
 
   return (
     <div className="mx-auto max-w-[1440px] space-y-5 px-4 py-6 sm:px-6">
-      <div>
+      <div className="min-w-0">
         <Link to="/coordinator" className="inline-flex items-center gap-1.5 rounded-sm text-meta font-medium text-ink-2 hover:text-ink">
           <ArrowLeft size={14} weight="bold" aria-hidden /> Attention queue
         </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className="wide text-figure font-[800] tracking-[-0.03em]">{s.id}</h1>
+        <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 title={s.id} className="wide min-w-0 max-w-full truncate text-heading font-[800] tracking-[-0.03em] sm:text-figure">{s.id}</h1>
           {eta && <RiskBadge level={eta.risk_level} size="lg" />}
           <StatusTag status={s.status} />
-          <p className="text-body text-ink-2">
-            {s.order.id} for {s.customer_name}
-          </p>
         </div>
+        <p className="mt-1 text-body text-ink-2">
+          {s.order.id} for {s.customer_name}, to {s.destination_name}
+        </p>
       </div>
 
       {shipment.error && <ErrorNote what="the latest update" error={shipment.error} onRetry={() => shipment.refetch()} loadedAt={shipment.dataUpdatedAt} />}
@@ -90,8 +90,8 @@ export function ShipmentDetailPage() {
         <AlertBanner alert={s.open_alert} headline={eta.headline} onReview={() => optionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
       )}
 
-      <div className="grid gap-5 lg:grid-cols-12">
-        <div className="space-y-5 lg:col-span-7">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+        <div className="min-w-0 space-y-5 lg:col-span-7 xl:col-span-8">
           <Card aria-labelledby="map-h">
             <CardHeader title="Route and position" id="map-h">
               <MapLegend rerouted={s.active_route_id !== s.planned_route_id} />
@@ -120,10 +120,9 @@ export function ShipmentDetailPage() {
               </div>
             </div>
           </Card>
-          {s.live_traffic && s.status === "IN_TRANSIT" && <WeatherPanel routeId={s.active_route_id} />}
         </div>
 
-        <div className="space-y-5 lg:col-span-5">
+        <div className="min-w-0 space-y-5 lg:col-span-5 xl:col-span-4">
           <Card aria-labelledby="eta-h">
             <CardHeader title="ETA and why" id="eta-h" />
             <div className="p-5">{eta ? <EtaPanel snapshot={eta} previous={previous} headingId="eta-label" /> : <EmptyState title="No estimate yet." />}</div>
@@ -144,6 +143,7 @@ export function ShipmentDetailPage() {
               <KeyValue label="Agreed delivery">{clockTz(s.order.agreed_delivery_by)}</KeyValue>
             </dl>
           </Card>
+          {s.live_traffic && s.status === "IN_TRANSIT" && <WeatherPanel routeId={s.active_route_id} />}
         </div>
       </div>
 
@@ -177,7 +177,7 @@ function MapLegend({ rerouted }: { rerouted: boolean }) {
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1 text-meta text-muted" aria-label="Map legend">
       <li className="flex items-center gap-1.5">
-        <span aria-hidden className="inline-block h-1 w-5 rounded-full bg-accent" /> Current route
+        <span aria-hidden className="inline-block h-1 w-5 rounded-full bg-accent-ink" /> Current route
       </li>
       <li className="flex items-center gap-1.5">
         <span aria-hidden className="inline-block w-5 border-t-2 border-dashed border-ink-2" /> {rerouted ? "Previous route" : "Alternative route"}
@@ -192,7 +192,7 @@ function DetailSkeleton() {
       <div className="mx-auto max-w-[1440px] space-y-5 px-4 py-6 sm:px-6">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-9 w-80" />
-        <div className="grid gap-5 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           <Skeleton className="h-[480px] lg:col-span-7" />
           <Skeleton className="h-[480px] lg:col-span-5" />
         </div>

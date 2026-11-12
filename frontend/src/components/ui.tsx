@@ -36,10 +36,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
 
 /* ---------------- Risk badge: always icon + word (DESIGN.md 7.6) ---------------- */
 
+/* A risk marker, not a pill: coloured word and icon behind a short signal bar, like a road-edge marker. */
 const RISK_STYLE: Record<RiskLevel, string> = {
-  LOW: "bg-low-soft text-low",
-  MEDIUM: "bg-medium-soft text-medium",
-  HIGH: "bg-high-soft text-high",
+  LOW: "text-low",
+  MEDIUM: "text-medium",
+  HIGH: "text-high",
 };
 
 export function RiskIcon({ level, size = 18 }: { level: RiskLevel; size?: number }) {
@@ -50,9 +51,9 @@ export function RiskIcon({ level, size = 18 }: { level: RiskLevel; size?: number
 
 export function RiskBadge({ level, size = "md" }: { level: RiskLevel; size?: "md" | "lg" }) {
   return (
-    <CrossFade value={level} shift="6px" className={`overflow-hidden rounded-sm align-middle ${size === "lg" ? "text-lead" : "text-meta"}`}>
+    <CrossFade value={level} shift="6px" className={`align-middle ${size === "lg" ? "text-lead" : "text-meta"}`}>
       {(l) => (
-        <span className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2 font-semibold ${size === "lg" ? "py-1" : "py-0.5"} ${RISK_STYLE[l as RiskLevel]}`}>
+        <span className={`inline-flex items-center gap-1.5 whitespace-nowrap border-l-[3px] border-current pl-2 font-semibold ${size === "lg" ? "py-0.5" : ""} ${RISK_STYLE[l as RiskLevel]}`}>
           <RiskIcon level={l as RiskLevel} size={size === "lg" ? 20 : 16} />
           {RISK_WORD[l as RiskLevel]}
         </span>
@@ -193,7 +194,7 @@ export function KeyValue({ label, children }: { label: string; children: ReactNo
   return (
     <div className="min-w-0">
       <dt className="text-meta text-muted">{label}</dt>
-      <dd className="tnum truncate text-body font-medium text-ink">{children}</dd>
+      <dd className="tnum break-words text-body font-medium text-ink">{children}</dd>
     </div>
   );
 }

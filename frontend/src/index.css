@@ -40,8 +40,7 @@
   --high-soft: #f9dcd9;
   --chart-ink: #333e50;
   --road: #2b3240;
-  --panel-shadow: 0 1px 0 rgb(27 34 48 / 0.04), 0 12px 28px -18px rgb(27 34 48 / 0.35);
-  --glow: rgb(255 255 255 / 0.7);
+  --panel-shadow: 0 1px 2px rgb(27 34 48 / 0.06);
   color-scheme: light;
 }
 :root[data-theme="dark"] {
@@ -69,8 +68,7 @@
   --high-soft: #41201d;
   --chart-ink: #c9d0da;
   --road: #0b0f15;
-  --panel-shadow: 0 1px 0 rgb(0 0 0 / 0.3), 0 14px 32px -18px rgb(0 0 0 / 0.7);
-  --glow: rgb(255 197 49 / 0.04);
+  --panel-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
   color-scheme: dark;
 }
 
@@ -140,11 +138,6 @@
 @layer base {
   html {
     background-color: var(--canvas);
-    /* Soft daylight from the top of the page; fixed, so it never repaints while scrolling */
-    background-image:
-      radial-gradient(1100px 520px at 12% -12%, var(--glow), transparent 62%),
-      radial-gradient(900px 480px at 100% -8%, var(--glow), transparent 60%);
-    background-attachment: fixed;
     color: var(--ink);
     font-family: var(--font-sans);
     font-size: 16px;
@@ -172,16 +165,6 @@
     transition: text-decoration-thickness var(--duration-fast) var(--ease-out-quiet);
   }
   a.link:hover { text-decoration-thickness: 4px; }
-  /* Fine grain over the whole page: fixed, pointer-events none, never on a scrolling layer */
-  body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 1500;
-    pointer-events: none;
-    opacity: 0.05;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
   /* Theme switch fades colours rather than snapping (never on first paint). */
   html.theme-anim, html.theme-anim * {
     transition: background-color var(--duration-slow) var(--ease-out-quiet), border-color var(--duration-slow) var(--ease-out-quiet), color var(--duration-slow) var(--ease-out-quiet) !important;
@@ -247,7 +230,7 @@
   to { stroke-dashoffset: -128; }
 }
 .lane-flow {
-  animation: lane-flow 1.6s linear infinite;
+  animation: lane-flow 4s linear infinite;
 }
 /* A reported incident pulses once a second until it is cleared. */
 @keyframes pulse-ring {
@@ -255,7 +238,7 @@
   to { transform: scale(2.2); opacity: 0; }
 }
 .pulse-ring {
-  animation: pulse-ring 1.4s var(--ease-out-quiet) infinite;
+  animation: pulse-ring 1.4s var(--ease-out-quiet) 3;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -346,29 +329,74 @@ dialog.ct-dialog::backdrop {
   .journey-fill, .journey-truck { transition: none; }
 }
 
-/* Panels float slightly off the powder-blue page with a blue-tinted shadow */
+/* Panels sit flat on the concrete page: a hairline border and the faintest drop, no lift on hover. */
 .rounded-lg.border-line.bg-surface,
 .rounded-lg.border-line.bg-raised {
   box-shadow: var(--panel-shadow);
 }
-/* Interactive panels lift on hover */
-a.rounded-lg.bg-surface,
-button.rounded-lg.bg-surface {
-  transition: transform var(--duration-base) var(--ease-out-quiet), box-shadow var(--duration-base) var(--ease-out-quiet), border-color var(--duration-base) var(--ease-out-quiet);
-}
-a.rounded-lg.bg-surface:hover,
-button.rounded-lg.bg-surface:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgb(20 38 58 / 0.06), 0 18px 36px -18px rgb(20 38 58 / 0.35);
-}
-/* Primary button: inner highlight and a soft green glow on hover */
+/* Primary button: a crisp bottom edge, like a painted kerb. It darkens on hover; it does not move. */
 .btn-primary {
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 1px 2px rgb(20 38 58 / 0.15);
+  box-shadow: inset 0 -2px 0 rgb(27 34 48 / 0.18);
 }
-.btn-primary:not(:disabled):hover {
-  transform: translateY(-1px);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 10px 22px -10px var(--accent);
+
+/* Sign-in fields: an underline, like a form slip, that turns marker yellow on focus. */
+.ct-underline-input {
+  display: block;
+  width: 100%;
+  height: 3rem;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--text-lead);
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-out-quiet), box-shadow var(--duration-fast) var(--ease-out-quiet);
+}
+.ct-underline-input::placeholder { color: var(--muted); opacity: 0.7; }
+.ct-underline-input:hover { border-bottom-color: var(--ink-2); }
+.ct-underline-input:focus-visible {
+  outline: none;
+  border-radius: 0;
+  border-bottom-color: var(--ink);
+  box-shadow: 0 3px 0 0 var(--accent);
+}
+
+/* Quick sign-in roster: the whole row paints marker yellow on hover; "Sign in" slides into place. */
+.ct-roster-row {
+  transition: background-color var(--duration-fast) var(--ease-out-quiet);
+}
+.ct-roster-row:hover:not(:disabled),
+.ct-roster-row:focus-visible {
+  background-color: var(--accent);
+}
+.ct-roster-row:hover:not(:disabled) *,
+.ct-roster-row:focus-visible * {
+  color: var(--on-accent);
+}
+.ct-roster-go {
+  opacity: 0.4;
+  transform: translateX(-6px);
+  transition: opacity var(--duration-base) var(--ease-out-quiet), transform var(--duration-base) var(--ease-out-quiet);
+}
+.ct-roster-row:hover .ct-roster-go,
+.ct-roster-row:focus-visible .ct-roster-go {
+  opacity: 1;
+  transform: none;
+}
+/* Touch screens have no hover: show the action plainly. */
+@media (hover: none) {
+  .ct-roster-go { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  a.rounded-lg.bg-surface:hover, button.rounded-lg.bg-surface:hover, .btn-primary:not(:disabled):hover { transform: none; }
+  .ct-roster-go { transform: none; }
 }
+
+/* Text links with an arrow: the arrow nudges forward on hover. */
+.ct-go svg { transition: transform var(--duration-base) var(--ease-out-quiet); }
+.ct-go:hover svg { transform: translateX(3px); }
+@media (prefers-reduced-motion: reduce) { .ct-go:hover svg { transform: none; } }
+
+/* Horizontal scrollers on phones (main nav): swipeable, no visible bar. */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { LayoutGroup, motion } from "motion/react";
-import { ArrowRight, CheckCircle, Bell } from "@phosphor-icons/react";
+import { ArrowRight, Bell } from "@phosphor-icons/react";
 import { useShipments } from "../../api/queries";
 import { useRoutes } from "../../api/useShipmentRoutes";
 import type { RiskLevel, ShipmentSummary } from "../../api/contract";
@@ -55,13 +55,8 @@ export function AttentionQueue() {
         </div>
       </div>
 
-      {/* Summary strip */}
-      <dl className="mt-6 grid grid-cols-2 overflow-hidden rounded-lg border border-line bg-surface sm:grid-cols-4">
-        <SummaryTile label={RISK_WORD.HIGH} value={count("HIGH")} icon={<RiskIcon level="HIGH" size={18} />} tone="text-high" />
-        <SummaryTile label={RISK_WORD.MEDIUM} value={count("MEDIUM")} icon={<RiskIcon level="MEDIUM" size={18} />} tone="text-medium" />
-        <SummaryTile label={RISK_WORD.LOW} value={count("LOW")} icon={<CheckCircle size={18} weight="bold" aria-hidden />} tone="text-low" />
-        <SummaryTile label="Open alerts" value={needs.length} icon={<Bell size={18} weight="bold" aria-hidden />} tone="text-accent-ink" />
-      </dl>
+      {/* One strip: how the active fleet splits by risk, plus open alerts */}
+      <RiskStrip high={count("HIGH")} medium={count("MEDIUM")} low={count("LOW")} alerts={needs.length} />
 
       {shipments.error && (
         <div className="mt-4">
@@ -69,7 +64,7 @@ export function AttentionQueue() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-12">
+      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-12">
         <div className="space-y-6 xl:col-span-7">
           {shipments.isPending ? (
             <QueueSkeleton />
@@ -110,17 +105,40 @@ export function AttentionQueue() {
   );
 }
 
-function SummaryTile({ label, value, icon, tone }: { label: string; value: number; icon: React.ReactNode; tone: string }) {
+function RiskStrip({ high, medium, low, alerts }: { high: number; medium: number; low: number; alerts: number }) {
+  const total = high + medium + low;
+  const parts = [
+    { level: "HIGH" as RiskLevel, n: high, bar: "bg-high", text: "text-high" },
+    { level: "MEDIUM" as RiskLevel, n: medium, bar: "bg-medium", text: "text-medium" },
+    { level: "LOW" as RiskLevel, n: low, bar: "bg-low", text: "text-low" },
+  ];
   return (
-    <div className="border-line px-5 py-4 [&:not(:last-child)]:border-r max-sm:[&:nth-child(2)]:border-r-0 max-sm:[&:nth-child(-n+2)]:border-b">
-      <dt className={`flex items-center gap-1.5 text-meta font-semibold ${tone}`}>
-        {icon}
-        {label}
-      </dt>
-      <dd className="mt-1">
-        <CountUp value={value} className="wide text-[2.75rem] font-[800] leading-none tracking-[-0.03em] text-ink" />
-      </dd>
-    </div>
+    <section aria-label="Active shipments by risk" className="mt-6 rounded-lg border border-line bg-surface px-5 py-4">
+      <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
+        <dl className="flex flex-wrap items-end gap-x-8 gap-y-3">
+          {parts.map((p) => (
+            <div key={p.level}>
+              <dt className={`flex items-center gap-1.5 text-meta font-semibold ${p.text}`}>
+                <RiskIcon level={p.level} size={16} />
+                {RISK_WORD[p.level]}
+              </dt>
+              <dd className="mt-0.5">
+                <CountUp value={p.n} className="wide text-[2rem] font-[800] leading-none tracking-[-0.03em] text-ink" />
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <div className="ml-auto flex items-center gap-2 text-body">
+          <Bell size={16} weight="bold" aria-hidden className="text-ink-2" />
+          <span className="tnum font-semibold text-ink">{alerts}</span>
+          <span className="text-ink-2">open {alerts === 1 ? "alert" : "alerts"}</span>
+        </div>
+      </div>
+      {/* Proportion bar: the same three numbers, as shares of the active fleet */}
+      <div aria-hidden className="mt-4 flex h-2 gap-0.5 overflow-hidden rounded-full bg-sunken">
+        {total > 0 && parts.filter((p) => p.n > 0).map((p) => <span key={p.level} className={p.bar} style={{ width: `${(p.n / total) * 100}%` }} />)}
+      </div>
+    </section>
   );
 }
 
@@ -152,26 +170,27 @@ function Rows({ rows, routes, selected, onSelect }: { rows: ShipmentSummary[]; r
             className={`relative border-b border-line transition-colors duration-200 last:border-0 ${isSel ? "bg-accent-soft/60" : "hover:bg-raised"}`}
           >
             {isSel && <motion.span layoutId="queue-selected" aria-hidden className="absolute inset-y-0 left-0 w-1 bg-accent" transition={{ duration: duration.base, ease: easeOut }} />}
-            <div className="grid grid-cols-[1fr_auto] gap-x-5 gap-y-3 px-5 py-4 sm:grid-cols-[124px_1fr_auto]">
-              <div className="flex flex-col items-start gap-1.5">
-                <RiskCell eta={eta} />
-                <StatusTag status={s.status} />
-              </div>
-              <div className="col-span-2 min-w-0 sm:col-span-1 sm:col-start-2 sm:row-start-1">
-                <button type="button" onClick={() => onSelect(s.id)} aria-pressed={isSel} className="rounded-sm text-left">
-                  <span className="whitespace-nowrap font-mono text-lead font-semibold tracking-tight text-ink">{s.id}</span>
-                  <span className="ml-2 text-body text-ink-2">{s.customer_name}</span>
-                  <span className="sr-only">. Show on map</span>
-                </button>
-                <p className="mt-1 text-body text-ink">{eta?.headline ?? "No estimate yet."}</p>
+            <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:gap-4 sm:px-5">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <RiskCell eta={eta} />
+                  <button type="button" onClick={() => onSelect(s.id)} aria-pressed={isSel} className="min-w-0 rounded-sm text-left">
+                    <span title={s.id} className="inline-block max-w-[18ch] truncate align-bottom text-lead font-semibold tracking-tight text-ink">{s.id}</span>
+                    <span className="sr-only">. Show on map</span>
+                  </button>
+                  <StatusTag status={s.status} />
+                </div>
+                <p className="mt-1 truncate text-meta text-ink-2">{s.customer_name}</p>
+                {eta?.headline !== "On schedule" && <p className="mt-2 text-body text-ink">{eta?.headline ?? "No estimate yet."}</p>}
                 <p className="tnum mt-1 text-meta text-muted">{positionText({ ...s, current_eta: eta }, routes[s.active_route_id])}</p>
               </div>
-              <div className="col-start-2 row-start-1 flex flex-col items-end gap-2 text-right sm:col-start-3">
+              <div className="flex shrink-0 flex-row items-end justify-between gap-3 border-t border-dashed border-line pt-3 sm:flex-col sm:border-0 sm:pt-0 sm:text-right">
                 {eta && (
-                  <div className="tnum leading-tight">
+                  <div className="tnum leading-tight sm:text-right">
                     <span className="sr-only">ETA </span>
-                    <CrossFade value={eta.eta}>{(v) => <span className={`text-heading font-semibold ${late ? "text-high" : "text-ink"}`}>{clock(v)}</span>}</CrossFade>
-                    <span className="block text-meta text-muted">promised {clock(eta.promised_by)} IST</span>
+                    <CrossFade value={eta.eta}>{(v) => <span className={`wide text-heading font-[800] ${late ? "text-high" : "text-ink"}`}>{clock(v)}</span>}</CrossFade>
+                    <span className="block text-meta text-muted">promised {clock(eta.promised_by)}</span>
+                    <Slack min={eta.slack_min} />
                   </div>
                 )}
                 <div className="flex items-center gap-2">
@@ -180,12 +199,8 @@ function Rows({ rows, routes, selected, onSelect }: { rows: ShipmentSummary[]; r
                       Review options
                     </Button>
                   )}
-                  <Link
-                    to={`/coordinator/shipments/${s.id}`}
-                    aria-label={`Details for ${s.id}`}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-line text-ink-2 transition-[transform,border-color] duration-200 hover:translate-x-0.5 hover:border-line-strong"
-                  >
-                    <ArrowRight size={14} weight="bold" aria-hidden />
+                  <Link to={`/coordinator/shipments/${s.id}`} aria-label={`Open ${s.id}`} className="ct-go inline-flex items-center gap-1 rounded-sm px-1 py-1 text-meta font-semibold text-ink-2 hover:text-ink">
+                    Open <ArrowRight size={13} weight="bold" aria-hidden />
                   </Link>
                 </div>
               </div>
@@ -213,5 +228,15 @@ function QueueSkeleton() {
         ))}
       </div>
     </Loading>
+  );
+}
+
+/** Minutes to spare against the promise, or minutes late: the number a coordinator scans for. */
+function Slack({ min }: { min: number }) {
+  const late = min < 0;
+  return (
+    <span className={`tnum mt-0.5 block text-meta font-semibold ${late ? "text-high" : "text-low"}`}>
+      {late ? `${-min} min late` : `${min} min spare`}
+    </span>
   );
 }

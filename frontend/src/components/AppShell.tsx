@@ -144,7 +144,7 @@ function CoordinatorShell() {
               </button>
             </div>
           </div>
-          <nav aria-label="Main" className="flex gap-1 overflow-x-auto px-2 pb-2">
+          <nav aria-label="Main" className="no-scrollbar flex gap-1 overflow-x-auto px-2 pb-2">
             {COORD_NAV.map((n) => (
               <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `whitespace-nowrap rounded-md px-3 py-2 text-meta font-medium ${isActive ? "bg-rail-2 text-rail-accent" : "text-rail-ink"}`}>
                 {n.label}
@@ -196,12 +196,12 @@ function SimpleShell({ role }: { role: Role }) {
       <CommandPalette open={palette.open} onClose={() => palette.setOpen(false)} />
       <SkipLink />
       <header className="sticky top-0 z-[800] border-b border-line bg-canvas/90 backdrop-blur-sm">
-        <div className={`mx-auto flex h-14 items-center gap-2 px-4 ${narrow ? "max-w-xl" : "max-w-4xl sm:px-6"}`}>
+        <div className={`mx-auto flex h-14 items-center gap-2 px-4 ${narrow ? "max-w-xl" : "max-w-[1100px] sm:px-6"}`}>
           <NavLink to={homeFor(role)} className="flex items-center gap-2 rounded-sm font-semibold tracking-tight">
             <Mark />
-            <span className={narrow ? "sr-only sm:not-sr-only" : ""}>Plant X</span>
+            <span className={narrow ? "sr-only sm:not-sr-only" : "whitespace-nowrap max-[420px]:sr-only"}>Plant X</span>
           </NavLink>
-          <span className="rounded-sm bg-sunken px-2 py-0.5 text-meta font-medium text-ink-2">{role === "DRIVER" ? "Driver" : "Customer"}</span>
+          <span className="border-l border-line-strong pl-2 text-meta font-medium text-muted">{role === "DRIVER" ? "Driver" : "Customer"}</span>
           <div className="ml-auto flex items-center gap-1">
             {!narrow && <PaletteTrigger onOpen={() => palette.setOpen(true)} />}
             <StreamIndicator />

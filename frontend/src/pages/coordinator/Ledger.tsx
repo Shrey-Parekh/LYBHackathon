@@ -55,7 +55,7 @@ function LedgerCard({ d }: { d: Decision }) {
         </p>
       </div>
 
-      <div className="grid gap-px bg-line sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-4">
         <Figure label="Predicted arrival" value={clock(d.predicted.chosen_eta)} />
         <Figure label="Actual arrival" value={o ? clock(o.actual_arrival) : "Not yet"} muted={!o} />
         <Figure label="With no action (simulated)" value={o?.counterfactual_no_action_arrival ? clock(o.counterfactual_no_action_arrival) : clock(d.predicted.no_action_eta)} note={o ? undefined : "predicted"} />

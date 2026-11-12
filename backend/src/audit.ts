@@ -3,6 +3,7 @@ import type { Db } from './db/db';
 
 export type AuditAction =
   | 'LOGIN_SUCCEEDED'
+  | 'DEMO_LOGIN'
   | 'LOGIN_FAILED'
   | 'EVENT_APPLIED'
   | 'EVENT_REJECTED'

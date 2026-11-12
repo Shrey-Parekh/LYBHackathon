@@ -211,7 +211,7 @@ function Story() {
   const b = BEATS[i];
 
   return (
-    <section id="story" aria-labelledby="story-h" className="relative bg-rail text-rail-ink">
+    <section id="story" aria-labelledby="story-h" className="relative bg-rail text-rail-ink" style={{ ["--low" as string]: "#7fd3b7", ["--medium" as string]: "#ffb37a", ["--high" as string]: "#ff9b92" }}>
       <div ref={ref} style={{ height: `${BEATS.length * 90}vh` }}>
         <div className="sticky top-16 flex min-h-[calc(100dvh-4rem)] flex-col justify-center py-10">
           <div className="mx-auto w-full max-w-[1200px] px-5 sm:px-8">
@@ -222,7 +222,7 @@ function Story() {
               <BeatDots i={i} />
             </div>
 
-            <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
+            <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
               <div aria-live="polite">
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.35, ease: easeOut }}>
@@ -271,7 +271,7 @@ function StoryRoad({ b }: { b: Beat }) {
   return (
     <svg viewBox="0 0 1000 230" className="w-full" role="img" aria-label={`Route RTE-01 with the truck at km ${b.km}${showBypass ? ", rerouted onto the bypass" : ""}`}>
       <path d={MAIN} stroke="#0b0f15" strokeWidth="30" strokeLinecap="round" fill="none" />
-      <path d={MAIN} stroke="#ffffff" strokeOpacity="0.55" strokeWidth="2.5" strokeDasharray="14 12" fill="none" className="lane-flow" />
+      <path d={MAIN} stroke="#ffffff" strokeOpacity="0.55" strokeWidth="2.5" strokeDasharray="14 12" fill="none" />
       <motion.path d={BYPASS} stroke="#0b0f15" strokeWidth="26" strokeLinecap="round" fill="none" initial={false} animate={{ pathLength: showBypass ? 1 : 0, opacity: showBypass ? 1 : 0 }} transition={{ duration: 0.9, ease: easeOut }} />
       <motion.path d={BYPASS} stroke="#ffc531" strokeWidth="4" strokeLinecap="round" fill="none" initial={false} animate={{ pathLength: showBypass ? 1 : 0, opacity: showBypass ? 1 : 0 }} transition={{ duration: 1.1, ease: easeOut, delay: 0.1 }} />
       {/* Distance driven so far, painted in marker yellow */}
@@ -367,11 +367,10 @@ function Roles() {
       <h2 id="roles-h" className="wide max-w-[20ch] text-[clamp(1.8rem,3.4vw,2.6rem)] font-[750] leading-[1.05] tracking-[-0.025em]">
         Three people, one shared view of the road.
       </h2>
-      <div className="mt-10 grid md:grid-cols-3">
+      <div className="mt-10 grid grid-cols-1 md:grid-cols-3">
         {ROLES.map((r, n) => (
           <div key={r.name} className={`py-6 md:px-8 ${n === 0 ? "md:pl-0" : "border-t border-dashed border-line-strong md:border-l md:border-t-0"}`}>
-            <r.icon size={28} weight="duotone" aria-hidden className="text-ink" />
-            <h3 className="mt-4 text-heading font-semibold">{r.name}</h3>
+            <h3 className="wide text-heading font-[800]">{r.name}</h3>
             <p className="mt-1 text-lead font-medium text-ink">{r.does}</p>
             <p className="mt-3 max-w-[36ch] text-body text-muted">{r.detail}</p>
           </div>

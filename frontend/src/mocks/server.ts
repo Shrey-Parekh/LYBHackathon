@@ -4,7 +4,7 @@
   Access rules mirror DESIGN.md 5.4 so the screens behave as they will against the real API.
 */
 import type { Decision, DecisionRequest, OnTimeRow, ShipmentDetail, ShipmentEventRequest, ShipmentSummary, StreamHint, User } from "../api/contract";
-import { HISTORY, ROUTES, USERS, minutes } from "./fixtures";
+import { CUSTOMERS, HISTORY, ROUTES, TRANSPORTERS, USERS, minutes } from "./fixtures";
 import {
   currentOptionSet, demoState, deriveWorld, driverOf, initialInputs, loadInputs, onInputsChanged, rebase, saveInputs, simNow,
   type Inputs, type World,
@@ -70,6 +70,20 @@ export async function mockFetch(input: RequestInfo | URL, init: RequestInit = {}
   if (path === "/auth/login" && method === "POST") {
     const u = USERS.find((x) => x.email.toLowerCase() === String(body?.email ?? "").toLowerCase());
     if (!u || !body?.password) return err(401, "INVALID_CREDENTIALS", "Email or password is not correct");
+    const { phone: _p, ...user } = u;
+    void _p;
+    return json(200, { token: `mock.${u.id}`, user });
+  }
+
+  // Demo one-tap sign-in, as the API serves it in demo mode.
+  if (path === "/auth/demo-accounts" && method === "GET") {
+    const org = (u: (typeof USERS)[number]) =>
+      u.customer_id ? CUSTOMERS[u.customer_id as keyof typeof CUSTOMERS].name : u.transporter_id ? TRANSPORTERS[u.transporter_id as keyof typeof TRANSPORTERS] : "Plant X";
+    return json(200, USERS.map((u) => ({ id: u.id, name: u.name, role: u.role, org: org(u) })));
+  }
+  if (path === "/auth/demo-login" && method === "POST") {
+    const u = USERS.find((x) => x.id === body?.user_id);
+    if (!u) return err(404, "NOT_FOUND", "No such demo account");
     const { phone: _p, ...user } = u;
     void _p;
     return json(200, { token: `mock.${u.id}`, user });
