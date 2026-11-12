@@ -19,6 +19,7 @@ export const NotificationKind = z.enum([
   'BACK_ON_SCHEDULE',
   'TRACKING_LOST',
   'DELIVERED',
+  'INVOICE_READY',
 ]);
 
 export const ErrorResponse = z.object({
@@ -256,6 +257,13 @@ export const RoadConditionsResponse = z.object({
   })),
 });
 
+export const InvoiceMeta = z.object({
+  filename: z.string(),
+  size_bytes: z.number().int().positive(),
+  uploaded_at: IsoTime,
+  uploaded_by_name: z.string(),
+});
+
 export const ShipmentDetail = z.object({
   id: z.string(),
   status: ShipmentStatus,
@@ -290,6 +298,8 @@ export const ShipmentDetail = z.object({
   open_alert: Alert.nullable(),
   active_disruptions: z.array(Disruption),
   live_traffic: LiveTraffic.optional(),
+  // Coordinators and the customer only; absent for drivers. null until a coordinator uploads one.
+  invoice: InvoiceMeta.nullable().optional(),
 });
 
 export const RouteDetail = z.object({

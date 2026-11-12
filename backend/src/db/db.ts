@@ -38,6 +38,7 @@ export function migrate(db: Db): void {
 export const DATA_TABLES = [
   'audit_events',
   'notifications',
+  'invoices',
   'decisions',
   'option_sets',
   'alerts',

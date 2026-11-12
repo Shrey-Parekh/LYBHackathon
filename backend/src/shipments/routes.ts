@@ -33,6 +33,7 @@ import {
   type SnapshotRow,
 } from './repo';
 import { RoadConditions } from './roadConditions';
+import { invoiceMeta } from '../invoices/routes';
 
 const IdParams = z.object({ id: z.string().min(1).max(40) });
 const ALL = ['COORDINATOR', 'DRIVER', 'CUSTOMER'] as const;
@@ -147,6 +148,7 @@ export function shipmentDetail(ctx: Ctx, user: AuthUser, s: ShipmentRow) {
       cleared_at: d.cleared_at,
     })),
     ...(ctx.liveRouteDemo?.isLiveShipment(s.id) ? { live_traffic: ctx.liveRouteDemo.traffic(s.active_route_id, s.last_progress_km) } : {}),
+    ...(user.role !== 'DRIVER' ? { invoice: invoiceMeta(db, s.id) } : {}),
   };
 }
 
