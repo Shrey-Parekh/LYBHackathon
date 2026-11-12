@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { NavLink, Navigate, Outlet, useLocation } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowsClockwise, ChartBar, ClockCountdown, Notebook, Moon, SignOut, SlidersHorizontal, Sun, WarningDiamond, type Icon } from "@phosphor-icons/react";
+import { ArrowsClockwise, ChartBar, ClockCountdown, Notebook, Moon, PlusCircle, SignOut, SlidersHorizontal, Sun, WarningDiamond, type Icon } from "@phosphor-icons/react";
 import { homeFor, setSession, useSession } from "../auth/session";
 import { useLiveUpdates, useStreamStatus } from "../api/stream";
 import { useDemoState } from "../api/queries";
@@ -28,6 +28,7 @@ const COORD_NAV: { to: string; label: string; icon: Icon; end?: boolean }[] = [
   { to: "/coordinator", label: "Attention", icon: WarningDiamond, end: true },
   { to: "/coordinator/dashboard", label: "Performance", icon: ChartBar },
   { to: "/coordinator/ledger", label: "Decision ledger", icon: Notebook },
+  { to: "/coordinator/orders/new", label: "New order", icon: PlusCircle },
   ...(DEMO_MODE ? [{ to: "/coordinator/demo", label: "Demo controls", icon: SlidersHorizontal }] : []),
 ];
 

@@ -11,6 +11,7 @@ import { ShipmentRoadMap } from "../../components/ShipmentRoadMap";
 import { LiveTrafficPanel } from "../../components/LiveTrafficPanel";
 import { WeatherPanel } from "../../components/WeatherPanel";
 import { InvoiceCard } from "../../components/InvoiceCard";
+import { ExtraOrders } from "../../components/ShipmentParts";
 import { AlertBanner, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
 import { OptionsSection } from "../../components/OptionsSection";
 import { clockTz } from "../../lib/time";
@@ -144,6 +145,7 @@ export function ShipmentDetailPage() {
               <KeyValue label="Original promise">{clockTz(s.order.original_promised_by)}</KeyValue>
               <KeyValue label="Agreed delivery">{clockTz(s.order.agreed_delivery_by)}</KeyValue>
             </dl>
+            <ExtraOrders shipment={s} />
           </Card>
 
           <InvoiceCard shipment={s} canUpload />
