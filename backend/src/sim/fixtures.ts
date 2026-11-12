@@ -1,5 +1,6 @@
 // Loads the fictional fixture files (DESIGN.md 10.1). The real files live in /fixtures (owned by the
 // data agent); until they land on main, the API falls back to the stand-ins in /test/fixtures-stub.
+import type { InvoiceRates } from '../invoices/invoicePdf';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -28,6 +29,8 @@ export interface FixtureConfig {
   disruptions?: { report_ahead_km: number };
   /** Open-Meteo sampling and grading; defaults in weather/weather.ts when absent. */
   weather?: WeatherConfig;
+  /** Fictional rates and GST for generated invoices; defaults in invoices/invoicePdf.ts when absent. */
+  invoice?: InvoiceRates;
 }
 
 export interface FixtureUser {
