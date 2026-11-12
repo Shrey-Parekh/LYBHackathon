@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 export type Db = Database.Database;
 
-const MIGRATIONS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../migrations');
+const MIGRATIONS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../../database/migrations');
 
 export function openDb(file: string): Db {
   if (file !== ':memory:') mkdirSync(dirname(resolve(file)), { recursive: true });

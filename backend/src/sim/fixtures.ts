@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import type { EtaConfig } from '../eta/types';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-export const REAL_FIXTURES_DIR = join(ROOT, 'fixtures');
+// Seed data lives in the repository's database/seed folder.
+export const REAL_FIXTURES_DIR = join(ROOT, '..', 'database', 'seed');
 export const STUB_FIXTURES_DIR = join(ROOT, 'test', 'fixtures-stub');
 
 export interface FixtureConfig {
