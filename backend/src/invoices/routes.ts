@@ -115,8 +115,11 @@ export function registerInvoiceRoutes(app: FastifyInstance, ctx: Ctx, reg: Regis
           shipment_id: s.id,
           customer_name: d.customer_name,
           deliver_to: d.destination_name,
-          product: d.order.product,
-          quantity_t: s.quantity_t,
+          // The truck's own order (whatever the added orders do not account for), then each added order.
+          lines: [
+            { order_id: s.order_id, product: d.order.product, quantity_t: Math.round((s.quantity_t - d.extra_orders.reduce((sum, o) => sum + o.quantity_t, 0)) * 100) / 100 },
+            ...d.extra_orders.map((o) => ({ order_id: o.id, product: o.product, quantity_t: o.quantity_t })),
+          ],
           transporter_name: d.transporter_name,
           vehicle_reg: s.vehicle_reg,
           promised_by: s.agreed_delivery_by,

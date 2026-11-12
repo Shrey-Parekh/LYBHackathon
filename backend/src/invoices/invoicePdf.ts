@@ -29,8 +29,8 @@ export interface InvoiceInput {
   shipment_id: string;
   customer_name: string;
   deliver_to: string;
-  product: string;
-  quantity_t: number;
+  /** One line per order on the truck: the shipment's own order first, then any added at dispatch. */
+  lines: InvoiceLine[];
   transporter_name: string;
   vehicle_reg: string;
   promised_by: string;
@@ -39,10 +39,15 @@ export interface InvoiceInput {
   issued_at: string;
 }
 
+export interface InvoiceLine {
+  order_id: string;
+  product: string;
+  quantity_t: number;
+}
+
 export interface InvoiceAmounts {
   invoice_no: string;
-  hsn: string;
-  rate_per_t_inr: number;
+  lines: (InvoiceLine & { hsn: string; rate_per_t_inr: number; amount_inr: number })[];
   taxable_inr: number;
   cgst_inr: number;
   sgst_inr: number;
@@ -52,15 +57,17 @@ export interface InvoiceAmounts {
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** Goods value at the product's rate, plus GST split equally into CGST and SGST (seller and buyer are both in Maharashtra). */
-export function invoiceAmounts(input: Pick<InvoiceInput, 'order_id' | 'product' | 'quantity_t'>, cfg: InvoiceRates): InvoiceAmounts {
-  const rule = cfg.rates.find((r) => input.product.toLowerCase().includes(r.match.toLowerCase()));
-  const rate = rule?.rate_per_t_inr ?? cfg.default_rate_per_t_inr;
-  const taxable = round2(input.quantity_t * rate);
+export function invoiceAmounts(input: Pick<InvoiceInput, 'order_id' | 'lines'>, cfg: InvoiceRates): InvoiceAmounts {
+  const lines = input.lines.map((line) => {
+    const rule = cfg.rates.find((r) => line.product.toLowerCase().includes(r.match.toLowerCase()));
+    const rate = rule?.rate_per_t_inr ?? cfg.default_rate_per_t_inr;
+    return { ...line, hsn: rule?.hsn ?? '39', rate_per_t_inr: rate, amount_inr: round2(line.quantity_t * rate) };
+  });
+  const taxable = round2(lines.reduce((sum, line) => sum + line.amount_inr, 0));
   const half = round2((taxable * cfg.gst_pct) / 200);
   return {
     invoice_no: `INV-${input.order_id.replace(/^ORD-/, '')}`,
-    hsn: rule?.hsn ?? '39',
-    rate_per_t_inr: rate,
+    lines,
     taxable_inr: taxable,
     cgst_inr: half,
     sgst_inr: half,
@@ -168,19 +175,24 @@ function draw(input: InvoiceInput, a: InvoiceAmounts, cfg: InvoiceRates): string
     p.text(x + 90, y, 9, 'F2', value);
   });
 
-  // Line items: one row, because a shipment carries one product.
+  // Line items: one row per order on the truck. The order number is shown only when there is more than one.
   p.band(L, 588, R - L, 20);
   p.text(L + 6, 594, 9, 'F2', 'Description');
   p.text(262, 594, 9, 'F2', 'HSN');
   p.right(360, 594, 9, 'F4', 'Qty (t)');
   p.right(450, 594, 9, 'F4', 'Rate (INR/t)');
   p.right(R - 6, 594, 9, 'F4', 'Amount (INR)');
-  p.text(L + 6, 570, 9, 'F1', clip(input.product, 40));
-  p.text(262, 570, 9, 'F1', a.hsn);
-  p.right(360, 570, 9, 'F3', input.quantity_t.toFixed(2));
-  p.right(450, 570, 9, 'F3', inr(a.rate_per_t_inr));
-  p.right(R - 6, 570, 9, 'F3', inr(a.taxable_inr));
-  p.line(L, 558, R);
+  const ROW = 16;
+  a.lines.forEach((line, i) => {
+    const y = 570 - i * ROW;
+    p.text(L + 6, y, 9, 'F1', clip(a.lines.length > 1 ? `${line.order_id}: ${line.product}` : line.product, 44));
+    p.text(262, y, 9, 'F1', line.hsn);
+    p.right(360, y, 9, 'F3', line.quantity_t.toFixed(2));
+    p.right(450, y, 9, 'F3', inr(line.rate_per_t_inr));
+    p.right(R - 6, y, 9, 'F3', inr(line.amount_inr));
+  });
+  const down = (a.lines.length - 1) * ROW; // everything below the table moves down with it
+  p.line(L, 558 - down, R);
 
   const totals: [string, number][] = [
     ['Taxable value', a.taxable_inr],
@@ -188,12 +200,12 @@ function draw(input: InvoiceInput, a: InvoiceAmounts, cfg: InvoiceRates): string
     [`SGST ${half}%`, a.sgst_inr],
   ];
   totals.forEach(([label, value], i) => {
-    p.text(350, 540 - i * 16, 9, 'F1', label);
-    p.right(R - 6, 540 - i * 16, 9, 'F3', inr(value));
+    p.text(350, 540 - down - i * 16, 9, 'F1', label);
+    p.right(R - 6, 540 - down - i * 16, 9, 'F3', inr(value));
   });
-  p.line(350, 498, R, 1);
-  p.text(350, 480, 11, 'F2', 'Total (INR)');
-  p.right(R - 6, 480, 11, 'F4', inr(a.total_inr));
+  p.line(350, 498 - down, R, 1);
+  p.text(350, 480 - down, 11, 'F2', 'Total (INR)');
+  p.right(R - 6, 480 - down, 11, 'F4', inr(a.total_inr));
 
   p.line(L, 120, R);
   p.text(L, 104, 8, 'F2', 'Fictional document for a hackathon demonstration. Not a valid tax invoice.');

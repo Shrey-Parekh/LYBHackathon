@@ -45,6 +45,8 @@ export interface FixtureUser {
 }
 
 export interface FixtureRoute {
+  /** The customer this road leads to; used to pick the route for a new order. Absent in the test stand-ins. */
+  destination_customer_id?: string;
   id: string;
   name: string;
   origin: string;
@@ -131,7 +133,12 @@ export interface Fixtures {
   config: FixtureConfig;
   users: FixtureUser[];
   customers: { id: string; name: string; delivery_lat: number; delivery_lng: number }[];
-  transporters: { id: string; name: string }[];
+  transporters: {
+    id: string;
+    name: string;
+    /** The fleet, used to choose a truck for a new order (orders/plan.ts). Absent in the test stand-ins. */
+    vehicles?: { registration: string; payload_capacity_t: number; tare_t: number; standby: boolean }[];
+  }[];
   routes: FixtureRoute[];
   alternatives: { route_id: string; alt_route_id: string; exit_km: number }[];
   history: HistoryShipment[];

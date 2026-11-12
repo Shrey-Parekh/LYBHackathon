@@ -61,6 +61,7 @@ function activeLines(ctx: Ctx, user: AuthUser, s: ShipmentRow): string {
   for (const x of d.active_disruptions) {
     lines.push(`  Reported problem: ${x.category}${x.at_km === null ? '' : ` near km ${Math.round(Number(x.at_km))}`}, expected delay ${x.expected_delay_min ?? 'unknown'} min, reported ${ist(String(x.reported_at))}`);
   }
+  for (const o of d.extra_orders) lines.push(`  Also on this truck: order ${o.id}, ${o.quantity_t} t ${o.product}, promised by ${ist(o.promised_by)} (included in the cargo total)`);
   if ('invoice' in d) lines.push(`  Invoice: ${d.invoice ? `${d.invoice.filename}, uploaded ${ist(d.invoice.uploaded_at)}, can be downloaded from the shipment page` : 'not uploaded yet'}`);
   if (d.open_alert) lines.push(`  Open alert: ${d.open_alert.level} since ${ist(d.open_alert.opened_at)}`);
   return lines.join('\n');
