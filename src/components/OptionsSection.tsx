@@ -28,14 +28,17 @@ export function OptionsSection({ shipment }: { shipment: ShipmentDetail }) {
   const lastSetId = useRef<string | null>(null);
 
   const set = options.data;
+  // Compare only option sets fetched while this page is open; a cached set from an earlier visit
+  // being replaced on arrival is not news to the coordinator.
+  const fresh = options.isFetchedAfterMount;
   useEffect(() => {
-    if (!set) return;
+    if (!set || !fresh) return;
     if (lastSetId.current && lastSetId.current !== set.id) {
       setStaleNotice(true);
       setChosen(null);
     }
     lastSetId.current = set.id;
-  }, [set]);
+  }, [set, fresh]);
 
   const latestDecision = decisions.data?.[0];
 
@@ -99,7 +102,7 @@ export function OptionsSection({ shipment }: { shipment: ShipmentDetail }) {
           </button>
         </div>
       )}
-      {recommended?.type === "RESCHEDULE" && (
+      {recommended?.type === "RESCHEDULE" && (recommended.projected_late_min ?? 0) > 0 && (
         <p className="flex items-start gap-2 border-b border-line px-5 py-3 text-body text-ink">
           <Info size={18} weight="bold" aria-hidden className="mt-0.5 shrink-0 text-accent" />
           {RESCHEDULE_ONLY}

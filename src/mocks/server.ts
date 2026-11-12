@@ -170,8 +170,10 @@ export async function mockFetch(input: RequestInfo | URL, init: RequestInit = {}
       return json(200, demoState(next));
     }
     if (path === "/demo/clock" && method === "POST") {
-      const next = rebase(inputs, body?.paused === false, typeof body?.speed === "number" ? body.speed : inputs.speed);
-      saveInputs({ ...next, started: true });
+      // Changing speed before Start only stores the speed; resuming counts as starting.
+      const running = body?.paused === false;
+      const next = { ...rebase(inputs, running, typeof body?.speed === "number" ? body.speed : inputs.speed), started: inputs.started || running };
+      saveInputs(next);
       return json(200, demoState(next));
     }
     // Mock-only controls for failure cases; the real API has no equivalent yet (see CONTRACT_GAPS.md).

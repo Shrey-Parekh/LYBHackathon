@@ -245,7 +245,7 @@ export function deriveWorld(inputs: Inputs): World {
       current1 = {
         ...current1,
         id: `${current1.id}-S${age}`,
-        computed_at: now,
+        // ETA is held (DESIGN.md 6.5), so computed_at stays with the factors that produced it.
         confidence: "LOW",
         position_age_min: age,
         margin_min: margin,

@@ -143,14 +143,12 @@ function Rows({ rows, routes, selected, onSelect }: { rows: ShipmentSummary[]; r
                   <span className="sr-only">. Show on map</span>
                 </button>
                 <p className="mt-0.5 text-body text-ink">{eta?.headline ?? "No estimate yet."}</p>
-                <p className="tnum mt-1 text-meta text-muted">
-                  {eta ? (
-                    <>
-                      ETA <span className="font-semibold text-ink">{clock(eta.eta)}</span> against promise {clock(eta.promised_by)} IST.{" "}
-                    </>
-                  ) : null}
-                  {positionText({ ...s, current_eta: eta }, routes[s.active_route_id])}
-                </p>
+                {eta && (
+                  <p className="tnum mt-1 text-body text-ink-2">
+                    ETA <span className="font-semibold text-ink">{clock(eta.eta)}</span> against promise {clock(eta.promised_by)} IST
+                  </p>
+                )}
+                <p className="tnum text-meta text-muted">{positionText({ ...s, current_eta: eta }, routes[s.active_route_id])}</p>
               </div>
               <div className="row-start-1 col-start-2 flex flex-col items-end gap-2 sm:col-start-3">
                 {s.open_alert ? (
