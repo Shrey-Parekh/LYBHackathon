@@ -12,6 +12,7 @@ import { LiveTrafficPanel } from "../../components/LiveTrafficPanel";
 import { WeatherPanel } from "../../components/WeatherPanel";
 import { AlertBanner, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
 import { OptionsSection } from "../../components/OptionsSection";
+import { DocumentsCard, DriverCard, TripLog } from "../../components/ShipmentOps";
 import { clockTz } from "../../lib/time";
 
 /* Coordinator shipment detail (DESIGN.md 7.2). */
@@ -120,6 +121,7 @@ export function ShipmentDetailPage() {
               </div>
             </div>
           </Card>
+          <TripLog s={s} />
         </div>
 
         <div className="min-w-0 space-y-5 lg:col-span-5 xl:col-span-4">
@@ -127,6 +129,8 @@ export function ShipmentDetailPage() {
             <CardHeader title="ETA and why" id="eta-h" />
             <div className="p-5">{eta ? <EtaPanel snapshot={eta} previous={previous} headingId="eta-label" /> : <EmptyState title="No estimate yet." />}</div>
           </Card>
+          <DriverCard s={s} />
+          <DocumentsCard s={s} />
 
           <Card aria-labelledby="facts-h">
             <CardHeader title="Shipment" id="facts-h" />

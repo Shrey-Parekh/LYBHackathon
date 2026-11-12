@@ -91,6 +91,13 @@ export async function mockFetch(input: RequestInfo | URL, init: RequestInit = {}
 
   const user = userFromAuth(headers);
   if (!user) return err(401, "UNAUTHENTICATED", "Sign in again");
+  // Driver operations run only against the real API; the mock answers with empty data so screens still load.
+  if (path === "/me/checks") return json(200, { licence_at: "mock", voice_at: "mock", complete: true });
+  if (/^\/shipments\/[^/]+\/(stops|checkins|documents|log)$/.test(path) && method === "GET") return json(200, []);
+  if (/^\/shipments\/[^/]+\/driving$/.test(path)) return json(200, { driving_min_since_break: 0, limit_min: 300, break_min: 30, break_due_at: null, overdue: false, on_stop: null });
+  if (/^\/shipments\/[^/]+\/driver-contact$/.test(path)) return json(200, { name: "Ravi Shinde", phone: "+91 90000 00101" });
+  if (/^\/(shipments\/[^/]+\/(stops|checkins|documents)|stops\/|checkins\/|documents\/)/.test(path)) return err(501, "NOT_IN_MOCK", "Driver operations need the real API (set VITE_USE_MOCKS=false)");
+
   const inputs = loadInputs();
   const world = deriveWorld(inputs);
   const find = (id: string) => world.shipments.find((s) => s.id === id && canSee(user, s));

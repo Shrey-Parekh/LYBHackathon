@@ -11,6 +11,9 @@ import { clock, clockTz } from "../../lib/time";
 import { DEMO_MODE } from "../../lib/env";
 import { duration, easeOut } from "../../lib/motion";
 import { useCurrentTrip, useDriverOutbox } from "./useCurrentTrip";
+import { useDriverChecks } from "../../api/ops";
+import { ShiftChecks } from "./ShiftChecks";
+import { CheckinBanner, DeliveryPhoto, DrivingPanel, useHasDeliveryPhoto } from "./TripTools";
 
 /*
   Driver trip screen (DESIGN.md 7.3): one column, one decision at a time, targets at least 44 px.
@@ -25,7 +28,13 @@ const NEXT: Partial<Record<ShipmentStatus, { to: ShipmentStatus; label: string }
 
 export function DriverTrip() {
   const { list, detail } = useCurrentTrip();
+  const checks = useDriverChecks();
   const s = detail.data;
+
+  // Start-of-shift checks come first. If the check service cannot be reached the trip still shows,
+  // so a network problem never locks a driver out of reporting.
+  if (checks.isPending) return <TripSkeleton />;
+  if (checks.data && !checks.data.complete) return <ShiftChecks />;
 
   if (list.isPending || (list.data?.length && detail.isPending)) return <TripSkeleton />;
   if (list.error && !list.data) {
@@ -53,6 +62,8 @@ function Trip({ s, error, onRetry, loadedAt }: { s: ShipmentDetail; error: unkno
   const pendingMilestone = items.find((i) => i.shipment_id === s.id && i.event.type === "MILESTONE");
   const pendingReport = items.find((i) => i.shipment_id === s.id && i.event.type === "DISRUPTION_REPORTED");
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const hasPhoto = useHasDeliveryPhoto(s.id);
+  const needsPhoto = s.status === "ARRIVED" && !hasPhoto;
 
   function advance() {
     if (!next) return;
@@ -63,6 +74,7 @@ function Trip({ s, error, onRetry, loadedAt }: { s: ShipmentDetail; error: unkno
     <Column>
       {!!error && <ErrorNote what="the latest trip update" error={error} onRetry={onRetry} loadedAt={loadedAt} />}
       <RouteChangeBanner s={s} routes={routes} />
+      <CheckinBanner s={s} />
 
       <section aria-labelledby="trip-h">
         <h1 id="trip-h" className="sr-only">
@@ -99,13 +111,16 @@ function Trip({ s, error, onRetry, loadedAt }: { s: ShipmentDetail; error: unkno
         )}
       </section>
 
+      <DeliveryPhoto s={s} />
+
       <section aria-label="Next step" className="mt-2">
         {/* The next button replaces the old one at once (entry animation only), so a stale button is never tappable. */}
         {next ? (
             <motion.div key={s.status} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: duration.base, ease: easeOut }}>
-              <Button ref={buttonRef} variant="primary" size="xl" className="min-h-20 text-driver" onClick={advance} disabled={!!pendingMilestone}>
+              <Button ref={buttonRef} variant="primary" size="xl" className="min-h-20 text-driver" onClick={advance} disabled={!!pendingMilestone || needsPhoto}>
                 {pendingMilestone ? (pendingMilestone.state === "retrying" ? "Not sent, retrying" : "Sending…") : next.label}
               </Button>
+              {needsPhoto && <p className="mt-2 text-center text-meta text-muted">Take the delivery photo first.</p>}
             </motion.div>
           ) : (
             <motion.p key="none" className="rounded-lg border border-line bg-surface p-4 text-body text-ink-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -113,6 +128,8 @@ function Trip({ s, error, onRetry, loadedAt }: { s: ShipmentDetail; error: unkno
             </motion.p>
           )}
       </section>
+
+      <DrivingPanel s={s} />
 
       <OutboxStatus items={items.filter((i) => i.shipment_id === s.id)} onRetry={() => outbox.retryNow()} />
       {rejections.map((r) => (

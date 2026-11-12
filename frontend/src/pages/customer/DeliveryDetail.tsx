@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router";
-import { ArrowLeft } from "@phosphor-icons/react";
+import { ArrowLeft, DownloadSimple, ShieldCheck } from "@phosphor-icons/react";
 import { useEtaHistory, useNotifications, useShipment } from "../../api/queries";
 import { useRoutes } from "../../api/useShipmentRoutes";
 import { ApiError } from "../../api/client";
@@ -8,7 +8,11 @@ import { EtaPanel } from "../../components/EtaPanel";
 import { ShipmentRoadMap } from "../../components/ShipmentRoadMap";
 import { LiveTrafficPanel } from "../../components/LiveTrafficPanel";
 import { JourneyBar, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
-import { clockTz, dateTimeTz } from "../../lib/time";
+import { clock, clockTz, dateTimeTz } from "../../lib/time";
+import type { ShipmentDetail } from "../../api/contract";
+import { useDocuments } from "../../api/ops";
+import { openDocument } from "../../components/ShipmentOps";
+import { fmtDur, useDocumentUrl } from "../driver/TripTools";
 
 /*
   Customer delivery detail (DESIGN.md 7.4): map, milestones, "Why this ETA" in plain words and the
@@ -69,6 +73,9 @@ export function DeliveryDetail() {
       </div>
 
       {shipment.error && <ErrorNote what="the latest update" error={shipment.error} onRetry={() => shipment.refetch()} loadedAt={shipment.dataUpdatedAt} />}
+
+      <ArrivalStrip s={s} />
+      <Paperwork s={s} />
 
       <Card aria-labelledby="why-h">
         <CardHeader title="Why this ETA" id="why-h" />
@@ -131,5 +138,98 @@ export function DeliveryDetail() {
         )}
       </Card>
     </div>
+  );
+}
+
+/**
+  The one line a customer wants first: how far away, how long, early or late, and why.
+  Minutes come from the ETA snapshot (eta minus the time it was computed), never from the browser clock.
+*/
+function ArrivalStrip({ s }: { s: ShipmentDetail }) {
+  const eta = s.current_eta;
+  const at = (st: string) => s.milestones.find((m) => m.status === st)?.at ?? null;
+  let big: string;
+  let small: string;
+  if (s.status === "DELIVERED") {
+    big = "Delivered";
+    small = at("DELIVERED") ? `at ${clockTz(at("DELIVERED")!)}` : "";
+  } else if (s.status === "ARRIVED") {
+    big = "At your gate";
+    small = at("ARRIVED") ? `arrived ${clockTz(at("ARRIVED")!)}, unloading next` : "unloading next";
+  } else if (s.status === "IN_TRANSIT" && eta) {
+    const mins = Math.max(0, Math.round((Date.parse(eta.eta) - Date.parse(eta.computed_at)) / 60_000));
+    big = `${fmtDur(mins)} away`;
+    small = `${Math.round(eta.remaining_km)} km to go, arriving about ${clockTz(eta.eta)}`;
+  } else {
+    big = "Not left yet";
+    small = `leaves Plant X at ${clockTz(s.planned_departure)}`;
+  }
+  const slack = eta && s.status !== "DELIVERED" ? eta.slack_min : null;
+  const timing = slack === null ? null : slack < 0 ? { t: `${-slack} min later than promised`, c: "text-[#ff9b92]" } : slack <= 5 ? { t: "On time", c: "text-[#7fd3b7]" } : { t: `${slack} min early`, c: "text-[#7fd3b7]" };
+  const reason = eta && eta.headline !== "On schedule" && s.status !== "DELIVERED" ? eta.headline : null;
+  return (
+    <section aria-label="Arrival" className="overflow-hidden rounded-lg bg-road text-rail-ink">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 px-5 pb-4 pt-5 sm:px-6">
+        <div>
+          <p className="wide text-[clamp(2rem,6vw,2.75rem)] font-[800] leading-none tracking-[-0.03em] text-[#f4f6f9]">{big}</p>
+          {small && <p className="tnum mt-2 text-body text-rail-ink">{small}</p>}
+        </div>
+        {timing && <p className={`text-lead font-semibold ${timing.c}`}>{timing.t}</p>}
+      </div>
+      {reason && <p className="border-t border-rail-2 px-5 py-3 text-body text-rail-ink sm:px-6">Why: {reason.replace(/^(Expected \d+ min late|At risk): /, "")}</p>}
+      {/* Lane markings under the strip, with the progress painted in marker yellow */}
+      <div aria-hidden className="relative h-2 bg-rail-2">
+        <span className="absolute inset-y-0 left-0 bg-accent transition-[width] duration-700" style={{ width: `${progressPct(s)}%` }} />
+      </div>
+    </section>
+  );
+}
+
+function progressPct(s: ShipmentDetail) {
+  if (s.status === "DELIVERED" || s.status === "ARRIVED") return 100;
+  const eta = s.current_eta;
+  const done = s.last_position?.progress_km;
+  if (!eta || done === undefined || done === null) return 0;
+  const total = done + eta.remaining_km;
+  return total > 0 ? Math.round((done / total) * 100) : 0;
+}
+
+/** Delivery photo and invoice, once Plant X has them. Hidden until there is something to show. */
+function Paperwork({ s }: { s: ShipmentDetail }) {
+  const docs = useDocuments(s.id);
+  const photo = docs.data?.find((d) => d.kind === "DELIVERY_PHOTO");
+  const invoice = docs.data?.find((d) => d.kind === "INVOICE");
+  const thumb = useDocumentUrl(photo?.id);
+  if (!photo && !invoice) return null;
+  return (
+    <Card aria-labelledby="paper-h">
+      <CardHeader title="Delivery proof and invoice" id="paper-h" />
+      <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        {photo && (
+          <div>
+            {thumb && (
+              <button type="button" onClick={() => void openDocument(photo)} className="block w-full overflow-hidden rounded-md border border-line" aria-label="Open the delivery photo full size">
+                <img src={thumb} alt={`Delivery photo for order ${s.order.id}`} className="max-h-56 w-full object-cover transition-transform duration-300 hover:scale-[1.02]" />
+              </button>
+            )}
+            <p className="tnum mt-2 text-meta text-muted">Taken at delivery, {clock(photo.uploaded_at)}</p>
+            {photo.verified_at && (
+              <p className="mt-1 flex items-center gap-1.5 text-body text-low">
+                <ShieldCheck size={16} weight="fill" aria-hidden /> Confirmed by Plant X
+              </p>
+            )}
+          </div>
+        )}
+        {invoice && (
+          <div>
+            <p className="text-body font-semibold">Invoice</p>
+            <p className="mt-1 truncate text-body text-ink-2" title={invoice.file_name}>{invoice.file_name}</p>
+            <button type="button" onClick={() => void openDocument(invoice, true)} className="btn-primary mt-3 inline-flex h-11 items-center gap-2 rounded-md bg-accent px-4 text-body font-semibold text-on-accent transition-colors hover:bg-accent-hover">
+              <DownloadSimple size={18} weight="bold" aria-hidden /> Download invoice
+            </button>
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }

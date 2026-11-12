@@ -123,7 +123,7 @@ function DeliveryCard({ s, route }: { s: ShipmentSummary; route: ReturnType<type
 
       <div className="mt-4 flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
         <div>
-          <p className="text-meta text-muted">Expected</p>
+          <p className="text-meta text-muted">Expected{s.status === "IN_TRANSIT" && eta ? `, ${Math.round(eta.remaining_km)} km away` : ""}</p>
           <p className="tnum leading-none">
             <CrossFade value={eta?.eta ?? ""}>{(v) => <span className="wide text-[2.25rem] font-[800] tracking-[-0.03em]">{v ? clock(v) : "Not yet"}</span>}</CrossFade>
           </p>
