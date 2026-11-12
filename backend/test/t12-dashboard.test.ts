@@ -41,25 +41,26 @@ describe('T12 dashboard', () => {
       expect(r.status).toBe(200);
       const key = groupBy === 'route' ? 'route_id' : 'transporter_id';
       const ids = [...new Set(all.map((x) => x[key]))].sort();
-      expect(r.body.groups.map((g: any) => g.group_id)).toEqual(ids);
-      for (const g of r.body.groups) {
+      expect(r.body.map((g: any) => g.group_id)).toEqual(ids);
+      for (const g of r.body) {
         const mine = all.filter((x) => x[key] === g.group_id);
-        expect(g.arrived).toBe(mine.length);
+        expect(g.delivered).toBe(mine.length);
         expect(g.on_time).toBe(mine.filter((x) => x.arrived <= x.promised).length);
+        expect(g.late).toBe(g.delivered - g.on_time);
       }
-      expect(r.body.totals.arrived).toBe(all.length);
-      expect(r.body.totals.on_time).toBe(all.filter((x) => x.arrived <= x.promised).length);
+      expect(r.body.reduce((a: number, g: any) => a + g.delivered, 0)).toBe(all.length);
+      expect(r.body.reduce((a: number, g: any) => a + g.on_time, 0)).toBe(all.filter((x) => x.arrived <= x.promised).length);
     }
   });
 
   it('delay-cause minutes include the history fixture and the replay shipments', async () => {
     const r = (await t.req('GET', '/dashboard/delay-causes?group_by=route', c)).body;
-    const rte01 = r.groups.find((g: any) => g.group_id === 'RTE-01');
+    const rte01 = r.find((g: any) => g.group_id === 'RTE-01');
     const historyRte01 = fx.history.filter((h) => h.route_id === 'RTE-01').flatMap((h) => h.delay_causes);
-    const accident = rte01.causes.find((x: any) => x.cause === 'ACCIDENT').minutes;
+    const accident = rte01.minutes_by_cause.ACCIDENT;
     const historyAccident = historyRte01.filter((x) => x.cause === 'ACCIDENT').reduce((a, x) => a + x.minutes, 0);
     expect(accident).toBe(historyAccident + 60); // SHP-1001's accident added at most 60 min in any snapshot
-    expect(rte01.total_min).toBe(rte01.causes.reduce((a: number, x: any) => a + x.minutes, 0));
+    expect(rte01.total_min).toBe(Object.values<number>(rte01.minutes_by_cause).reduce((a, x) => a + x, 0));
   });
 
   it('impact metrics: lead time 150 min for SHP-1001, 57 min avoided', async () => {
@@ -69,6 +70,7 @@ describe('T12 dashboard', () => {
       lead_time_min: 150,
     });
     expect(m.delay_avoided.total_min).toBe(57);
+    expect(m.delay_avoided_total_min).toBe(57); // the flat figure the dashboard reads
     expect(m.on_time_delivery).toEqual({ arrived: 2, with_decisions_pct: 50, without_decisions_pct: 0 });
     expect(m.cost_of_lateness_avoided).toMatchObject({ kind: 'MODELED_ESTIMATE', inr: 1425 });
     const drv = await t.login(DRIVER1);

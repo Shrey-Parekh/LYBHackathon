@@ -25,16 +25,18 @@ export function onTime(ctx: Ctx, groupBy: GroupBy) {
        GROUP BY ${g.id} ORDER BY ${g.id}`,
     )
     .all() as { group_id: string; group_name: string; arrived: number; on_time: number }[];
-  const groups = rows.map((r) => ({ ...r, late: r.arrived - r.on_time, on_time_pct: pct(r.on_time, r.arrived) }));
-  const arrived = groups.reduce((a, r) => a + r.arrived, 0);
-  const on = groups.reduce((a, r) => a + r.on_time, 0);
-  return {
-    group_by: groupBy,
-    measured_against: 'original_promised_by' as const,
-    groups,
-    totals: { arrived, on_time: on, late: arrived - on, on_time_pct: pct(on, arrived) },
-  };
+  // One row per group; delivered counts arrivals, on time is against the original promise.
+  return rows.map((r) => ({
+    group_id: r.group_id,
+    group_name: r.group_name,
+    delivered: r.arrived,
+    on_time: r.on_time,
+    late: r.arrived - r.on_time,
+    on_time_pct: pct(r.on_time, r.arrived),
+  }));
 }
+
+const CAUSES = ['CONGESTION', 'ACCIDENT', 'BREAKDOWN', 'WEATHER', 'LOADING_DELAY', 'ROAD_CLOSURE', 'OTHER'] as const;
 
 export function delayCauses(ctx: Ctx, groupBy: GroupBy) {
   const g = GROUP_SQL[groupBy];
@@ -46,14 +48,20 @@ export function delayCauses(ctx: Ctx, groupBy: GroupBy) {
        GROUP BY ${g.id}, c.cause ORDER BY ${g.id}, c.cause`,
     )
     .all() as { group_id: string; group_name: string; cause: string; minutes: number }[];
-  const byGroup = new Map<string, { group_id: string; group_name: string; causes: { cause: string; minutes: number }[]; total_min: number }>();
+  // One row per group with minutes for every cause (0 when none), so charts stack the same causes.
+  const byGroup = new Map<string, { group_id: string; group_name: string; minutes_by_cause: Record<string, number>; total_min: number }>();
   for (const r of rows) {
-    const e = byGroup.get(r.group_id) ?? { group_id: r.group_id, group_name: r.group_name, causes: [], total_min: 0 };
-    e.causes.push({ cause: r.cause, minutes: r.minutes });
+    const e = byGroup.get(r.group_id) ?? {
+      group_id: r.group_id,
+      group_name: r.group_name,
+      minutes_by_cause: Object.fromEntries(CAUSES.map((c) => [c, 0])),
+      total_min: 0,
+    };
+    e.minutes_by_cause[r.cause] = (e.minutes_by_cause[r.cause] ?? 0) + r.minutes;
     e.total_min += r.minutes;
     byGroup.set(r.group_id, e);
   }
-  return { group_by: groupBy, groups: [...byGroup.values()] };
+  return [...byGroup.values()];
 }
 
 interface Outcome {
@@ -124,12 +132,23 @@ export function impact(ctx: Ctx) {
   }
   const totalAvoided = perDecision.reduce((acc, d) => acc + d.delay_avoided_min, 0);
   const ratio = (n: number, d: number) => (d === 0 ? null : Math.round((1000 * n) / d) / 1000);
+  const etaErrorMean = errors.length ? Math.round((10 * errors.reduce((x, y) => x + y, 0)) / errors.length) / 10 : null;
+  const costAvoided = Math.round((Math.max(0, totalAvoided) / 60) * costPerHour);
   return {
     fictional: true as const,
+    // Flat figures the dashboard reads; the detailed blocks below explain each one.
+    warning_lead_time_median_min: median,
+    eta_error_mean_min: etaErrorMean,
+    alert_precision: ratio(highAndLateWithout, highAlerted),
+    alert_recall: ratio(lateWithoutAlertedInTime, lateWithout),
+    delay_avoided_total_min: perDecision.length ? totalAvoided : null,
+    on_time_pct_with_decisions: pct(onWith, arrived),
+    on_time_pct_without_decisions: pct(onWithout, arrived),
+    cost_of_lateness_avoided_inr: perDecision.length ? costAvoided : null,
     warning_lead_time: { kind: 'OBSERVED_IN_REPLAY' as const, median_min: median, per_shipment: lead },
     eta_error: {
       kind: 'OBSERVED_IN_REPLAY' as const,
-      mean_min: errors.length ? Math.round((10 * errors.reduce((x, y) => x + y, 0)) / errors.length) / 10 : null,
+      mean_min: etaErrorMean,
       n: errors.length,
     },
     alert_quality: {
@@ -143,7 +162,7 @@ export function impact(ctx: Ctx) {
     on_time_delivery: { arrived, with_decisions_pct: pct(onWith, arrived), without_decisions_pct: pct(onWithout, arrived) },
     cost_of_lateness_avoided: {
       kind: 'MODELED_ESTIMATE' as const,
-      inr: Math.round((Math.max(0, totalAvoided) / 60) * costPerHour),
+      inr: costAvoided,
       cost_per_late_hour_inr: costPerHour,
     },
     assumptions: [

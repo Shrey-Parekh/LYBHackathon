@@ -6,7 +6,7 @@ import { notFound } from '../http/errors';
 import { defineRoute, type RegisteredRoute } from '../http/route';
 import { ErrorResponse, Notification } from '../http/schemas';
 
-const COLS = 'id, shipment_id, kind, title, body, created_at, read_at';
+const COLS = 'id, user_id, shipment_id, kind, title, body, created_at, read_at';
 
 export function registerNotificationRoutes(app: FastifyInstance, ctx: Ctx, reg: RegisteredRoute[]) {
   defineRoute(app, ctx, reg, {
