@@ -3,7 +3,7 @@ import { api } from "./client";
 import { streamStatus } from "./stream";
 import type {
   Alert, Decision, DecisionRequest, DelayCauseRow, DemoState, EtaSnapshot, ImpactMetrics, Notification, OnTimeRow,
-  OptionSet, RouteDetail, RouteWeatherResponse, ShipmentDetail, ShipmentSummary,
+  EvPreview, LiveDemoArea, LiveRouteSource, LiveRouteState, LiveRouteTrip, LiveShipmentDraft, OptionSet, RoadConditions, RouteDetail, RouteWeatherResponse, ShipmentDetail, ShipmentSummary,
 } from "./contract";
 
 /*
@@ -47,6 +47,10 @@ export const useShipments = (filter = "") =>
 export const useShipment = (id: string | undefined) =>
   useQuery({ queryKey: keys.shipment(id ?? ""), enabled: !!id, queryFn: ({ signal }) => api<ShipmentDetail>(`/shipments/${id}`, { signal }) });
 
+export const useRoadConditions = (id: string, routeId: string, enabled: boolean) =>
+  useQuery({ queryKey: ["road-conditions", id, routeId], enabled, staleTime: 120_000, refetchInterval: 120_000,
+    refetchIntervalInBackground: false, queryFn: ({ signal }) => api<RoadConditions>(`/shipments/${id}/road-conditions`, { signal }) });
+
 export const useEtaHistory = (id: string | undefined) =>
   useQuery({ queryKey: keys.etaHistory(id ?? ""), enabled: !!id, queryFn: ({ signal }) => api<EtaSnapshot[]>(`/shipments/${id}/eta-history`, { signal }) });
 
@@ -77,6 +81,31 @@ export const useImpact = () =>
 
 export const useDemoState = (enabled = true) =>
   useQuery({ queryKey: keys.demo, enabled, queryFn: ({ signal }) => api<DemoState>(`/demo/state`, { signal }) });
+
+export const useLiveRouteState = () =>
+  useQuery({ queryKey: [...keys.demo, "live-route"], queryFn: ({ signal }) => api<LiveRouteState>("/demo/live-route", { signal }) });
+
+export function useGenerateLiveShipment() {
+  return useMutation({ mutationFn: ({ area, seed }: { area: LiveDemoArea; seed?: number }) =>
+    api<LiveShipmentDraft>(`/demo/live-route/generate?area=${area}${seed === undefined ? "" : `&seed=${seed}`}`) });
+}
+
+export function useStartLiveShipment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: LiveRouteSource & { request_id: string }) => api<LiveRouteTrip>("/demo/live-route/start", { method: "POST", body }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...keys.demo, "live-route"] });
+      qc.invalidateQueries({ queryKey: ["shipments"] });
+      qc.invalidateQueries({ queryKey: keys.weather });
+    },
+  });
+}
+
+export function useEvPreview() {
+  return useMutation({ mutationFn: (body: LiveRouteSource & { start_charge_pct: number }) =>
+    api<EvPreview>("/demo/live-route/ev-preview", { method: "POST", body }) });
+}
 
 /** Real-world forecast: the backend caches it for 15 minutes, so polling every 5 minutes is plenty. */
 export const useRouteWeather = () =>

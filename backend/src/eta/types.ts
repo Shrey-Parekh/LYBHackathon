@@ -57,6 +57,12 @@ export interface EtaConfig {
 
 export type ShipmentStatusName = 'PLANNED' | 'DISPATCHED' | 'IN_TRANSIT' | 'ARRIVED' | 'DELIVERED' | 'CANCELLED';
 
+export interface LiveDrive {
+  minutes: number;
+  trafficMinutes: number;
+  affectedSpans: { fromKm: number; toKm: number }[];
+}
+
 export interface EtaState {
   shipment_id: string;
   status: ShipmentStatusName;
@@ -76,6 +82,7 @@ export interface EtaState {
   positions: { at: string; km: number }[];
   /** Active (not cleared) disruptions. */
   disruptions: EtaDisruption[];
+  liveRouting?: { drive: LiveDrive | null };
   /**
    * Live mode only: forecast weather ahead on the active route (Open-Meteo). Absent in demo mode,
    * so the scripted demo stays repeatable.

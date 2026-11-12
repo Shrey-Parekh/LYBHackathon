@@ -4,7 +4,7 @@ import { loadConfig } from './config';
 
 const config = loadConfig();
 const { app, close } = await buildApp({ config, logger: true });
-await app.listen({ port: config.port, host: '0.0.0.0' });
+await app.listen({ port: config.port, host: process.env.HOST ?? '0.0.0.0' });
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {

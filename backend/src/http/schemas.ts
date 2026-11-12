@@ -231,6 +231,29 @@ export const ShipmentSummary = z.object({
   open_alert: Alert.nullable(),
   open_alert_id: z.string().nullable(),
   version: z.number().int(),
+  live_demo: z.boolean().optional(),
+});
+
+const LiveTraffic = z.object({
+  source: z.literal('TomTom'),
+  status: z.enum(['LIVE', 'STALE', 'UNAVAILABLE']),
+  fetched_at: IsoTime.nullable(),
+  drive_minutes: z.number().int().nullable(),
+  traffic_delay_min: z.number().int().nullable(),
+  sections: z.array(z.object({ category: z.string(), coordinates: z.array(z.tuple([z.number(), z.number()])) })),
+});
+
+export const RoadConditionsResponse = z.object({
+  route_id: z.string(), fetched_at: IsoTime, horizon_km: z.number(),
+  flow_status: z.enum(['LIVE', 'PARTIAL', 'UNAVAILABLE']), incidents_status: z.enum(['LIVE', 'UNAVAILABLE']),
+  flow: z.array(z.object({
+    coordinates: z.array(z.tuple([z.number(), z.number()])), at_km: z.number(), to_km: z.number(),
+    current_kph: z.number(), free_flow_kph: z.number(), condition: z.enum(['FLOWING', 'SLOW', 'HEAVY', 'CLOSED']),
+  })),
+  incidents: z.array(z.object({
+    id: z.string(), category: z.string(), description: z.string().nullable(), roads: z.array(z.string()),
+    delay_min: z.number().int().nullable(), at_km: z.number(), location: z.tuple([z.number(), z.number()]),
+  })),
 });
 
 export const ShipmentDetail = z.object({
@@ -266,6 +289,7 @@ export const ShipmentDetail = z.object({
   current_eta: EtaSnapshot.nullable(),
   open_alert: Alert.nullable(),
   active_disruptions: z.array(Disruption),
+  live_traffic: LiveTraffic.optional(),
 });
 
 export const RouteDetail = z.object({
@@ -316,6 +340,37 @@ export const DemoState = z.object({
   scenario_status: z.enum(['IDLE', 'RUNNING', 'PAUSED', 'WAITING_FOR_PRESENTER', 'FINISHED']),
   waiting_for: z.string().nullable(),
   next_pause_at: IsoTime.nullable(),
+});
+const LiveSeed = z.number().int().min(0).max(0xffffffff);
+const LiveDemoArea = z.enum(['mumbai', 'regional']);
+export const LiveRouteGenerate = z.object({ seed: z.coerce.number().pipe(LiveSeed).optional(), area: LiveDemoArea.optional() });
+const LiveRouteSource = z.object({
+  preset_id: z.string().min(1).max(40).optional(),
+  seed: LiveSeed.optional(),
+  area: LiveDemoArea.optional(),
+}).refine((input) => (input.preset_id !== undefined) !== (input.seed !== undefined), { message: 'Choose a preset or a generated seed' });
+export const LiveRouteStart = LiveRouteSource.safeExtend({ request_id: z.uuid() });
+export type LiveRouteStart = z.infer<typeof LiveRouteStart>;
+export const EvPreviewInput = LiveRouteSource.safeExtend({ start_charge_pct: z.number().int().min(5).max(100) });
+export type EvPreviewInput = z.infer<typeof EvPreviewInput>;
+export const EvPreview = z.object({
+  distance_km: z.number().positive(),
+  travel_min: z.number().int().nonnegative(),
+  charging_min: z.number().int().nonnegative(),
+  consumption_kwh: z.number(),
+  arrival_charge_pct: z.number().min(0).max(100),
+  reserve_pct: z.number().min(0).max(100),
+  battery_kwh: z.number().positive(),
+  stops: z.array(z.object({ name: z.string().nullable(), charging_min: z.number().int().nonnegative() })),
+});
+export const LiveShipmentDraft = z.object({
+  preset_id: z.string().nullable(), seed: LiveSeed.nullable(), area: LiveDemoArea, lane: z.string(), customer_name: z.string(), product: z.string(),
+  quantity_t: z.number(), gross_t: z.number(), stop_min: z.number().int(), promise_buffer_min: z.number().int(),
+  vehicle: z.object({ label: z.string(), tare_t: z.number(), max_gross_t: z.number(), height_m: z.number(), width_m: z.number(), length_m: z.number() }),
+});
+export const LiveRouteTrip = z.object({ shipment_id: z.string(), driver_name: z.string(), status: ShipmentStatus, draft: LiveShipmentDraft });
+export const LiveRouteState = z.object({
+  configured: z.boolean(), presets: z.array(LiveShipmentDraft), available_drivers: z.number().int(), shipments: z.array(LiveRouteTrip),
 });
 
 // ---- Dashboard and metrics (10.3) ----

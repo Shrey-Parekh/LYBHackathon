@@ -2,10 +2,11 @@
 // A set is valid for 10 minutes and until a disruption or route change bumps the shipment's plan_version.
 import { audit } from '../audit';
 import type { AlertRow } from '../alerts/alerts';
-import type { Ctx } from '../ctx';
+import { shipmentNow, type Ctx } from '../ctx';
 import { nextId } from '../db/db';
 import type { Option } from '../http/schemas';
-import { buildEtaState, getAlternatives, getRoute, getShipment, type ShipmentRow } from '../shipments/repo';
+import { getAlternatives, getRoute, getShipment, type ShipmentRow } from '../shipments/repo';
+import { etaStateFor } from '../shipments/recompute';
 import { addMinutes } from '../time';
 import { evaluateOptions } from './evaluate';
 
@@ -43,7 +44,7 @@ export function isStale(set: OptionSetRow, s: ShipmentRow, now: string): boolean
 /** The current valid option set for the alert, generating a new one if none is valid. */
 export function currentOptionSet(ctx: Ctx, alert: AlertRow, actorUserId: string): OptionSetRow {
   const { db } = ctx;
-  const now = ctx.clock.nowIso();
+  const now = shipmentNow(ctx, alert.shipment_id);
   const s = getShipment(db, alert.shipment_id)!;
   const latest = db.prepare('SELECT * FROM option_sets WHERE alert_id = ? ORDER BY id DESC LIMIT 1').get(alert.id) as
     | OptionSetRow
@@ -56,6 +57,7 @@ export function currentOptionSet(ctx: Ctx, alert: AlertRow, actorUserId: string)
 function generate(ctx: Ctx, alert: AlertRow, s: ShipmentRow, now: string, actorUserId: string): OptionSetRow {
   const { db } = ctx;
   const cfg = ctx.fixtures.config;
+  const state = etaStateFor(ctx, s, now);
   const current = getRoute(db, s.active_route_id)!;
   const alternatives = getAlternatives(db, s.active_route_id).map((a) => {
     const r = getRoute(db, a.alt_route_id)!;
@@ -68,11 +70,12 @@ function generate(ctx: Ctx, alert: AlertRow, s: ShipmentRow, now: string, actorU
       current_total_km: current.total_km,
       max_gross_t: r.max_gross_t,
       closed: r.closed === 1,
+      liveDrive: state.liveRouting ? ctx.liveRouteDemo?.drive(r.id, s.last_progress_km) : undefined,
     };
   });
   const standby = db.prepare('SELECT 1 FROM standby_vehicles WHERE available = 1 LIMIT 1').get() !== undefined;
   const result = evaluateOptions({
-    state: buildEtaState(db, s, now, cfg.eta),
+    state,
     now,
     status: s.status,
     gross_t: s.gross_t,

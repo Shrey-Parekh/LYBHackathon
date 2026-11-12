@@ -17,9 +17,10 @@ function localTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" });
 }
 
-export function WeatherPanel() {
+export function WeatherPanel({ routeId }: { routeId?: string } = {}) {
   const q = useRouteWeather();
   const d = q.data;
+  const routes = d?.routes.filter((route) => !routeId || route.route_id === routeId);
   return (
     <Card aria-labelledby="weather-h">
       <CardHeader title="Route weather, next 3 hours" id="weather-h">
@@ -38,9 +39,11 @@ export function WeatherPanel() {
         </div>
       ) : d && d.status === "UNAVAILABLE" ? (
         <p className="px-5 py-4 text-body text-muted">Weather service unavailable right now{d.error ? ` (${d.error})` : ""}. Nothing else is affected.</p>
+      ) : routeId && !routes?.length ? (
+        <p className="px-5 py-4 text-body text-muted">Forecast unavailable for this route.</p>
       ) : (
         <ul className="divide-y divide-line">
-          {d?.routes.map((r) => {
+          {routes?.map((r) => {
             const { word, tone, Icon } = LEVEL[r.level];
             return (
               <li key={r.route_id} className="grid grid-cols-[auto_1fr_auto] items-start gap-3 px-5 py-3">
