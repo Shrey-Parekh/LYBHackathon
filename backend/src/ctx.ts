@@ -5,6 +5,7 @@ import type { Clock } from './sim/clock';
 import type { Fixtures } from './sim/fixtures';
 import type { StreamHub } from './stream/hub';
 import type { Notifier } from './notify/notifier';
+import type { RouteWeather } from './weather/weather';
 
 /** Gives the simulated no-action arrival for a shipment (demo mode only). */
 export interface CounterfactualProvider {
@@ -19,4 +20,5 @@ export interface Ctx {
   hub: StreamHub;
   notifier: Notifier;
   counterfactual: CounterfactualProvider | null;
+  weather: RouteWeather;
 }

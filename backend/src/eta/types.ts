@@ -76,6 +76,11 @@ export interface EtaState {
   positions: { at: string; km: number }[];
   /** Active (not cleared) disruptions. */
   disruptions: EtaDisruption[];
+  /**
+   * Live mode only: forecast weather ahead on the active route (Open-Meteo). Absent in demo mode,
+   * so the scripted demo stays repeatable.
+   */
+  forecast?: { minutes: number; at_km: number; reasons: string[] } | null;
   /** Latest snapshot, used only to hold the ETA on a clock tick during a position gap. */
   previous: PreviousSnapshot | null;
 }

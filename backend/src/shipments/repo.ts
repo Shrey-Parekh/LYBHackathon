@@ -144,7 +144,7 @@ export function snapshotToApi(r: SnapshotRow) {
 }
 
 /** Everything computeEta needs, read from the database at time `now`. */
-export function buildEtaState(db: Db, s: ShipmentRow, now: string, cfg: EtaConfig): EtaState {
+export function buildEtaState(db: Db, s: ShipmentRow, now: string, cfg: EtaConfig, forecast: EtaState['forecast'] = null): EtaState {
   const route = getRoute(db, s.active_route_id)!;
   const since = addMinutes(now, -cfg.pace_window_min);
   const positions = db
@@ -171,6 +171,7 @@ export function buildEtaState(db: Db, s: ShipmentRow, now: string, cfg: EtaConfi
     position_at: s.last_position_at,
     positions,
     disruptions: activeDisruptions(db, s.id),
+    forecast,
     previous: prev
       ? { computed_at: prev.computed_at, eta: prev.eta, route_id: prev.route_id, factors: JSON.parse(prev.factors) as Factor[] }
       : null,

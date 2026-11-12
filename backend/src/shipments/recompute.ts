@@ -23,7 +23,10 @@ export function recomputeEta(
   if (s.status === 'ARRIVED' || s.status === 'DELIVERED' || s.status === 'CANCELLED') return null;
   const cfg = ctx.fixtures.config.eta;
   const prev = getSnapshot(db, s.current_eta_snapshot_id);
-  const res = computeEta(buildEtaState(db, s, now, cfg), now, cfg, trigger);
+  // Live mode only: forecast weather on the active route feeds the ETA. Demo mode stays scripted.
+  const w = ctx.config.demoMode ? undefined : ctx.weather.forRoute(s.active_route_id);
+  const forecast = w && w.worst && w.suggested_delay_min > 0 ? { minutes: w.suggested_delay_min, at_km: w.worst.km, reasons: w.worst.reasons } : null;
+  const res = computeEta(buildEtaState(db, s, now, cfg, forecast), now, cfg, trigger);
 
   const seq = nextSeq(db, 'ETA');
   const id = `ETA-${String(seq).padStart(6, '0')}`;

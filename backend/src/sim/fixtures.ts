@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { EtaConfig } from '../eta/types';
+import type { WeatherConfig } from '../weather/weather';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 // Seed data lives in the repository's database/seed folder.
@@ -25,6 +26,8 @@ export interface FixtureConfig {
   demo: { speed: number; position_interval_min: number; stale_tick_min: number };
   /** Where a driver's report without a location is placed; defaults to 15 km ahead (events/ingest.ts). */
   disruptions?: { report_ahead_km: number };
+  /** Open-Meteo sampling and grading; defaults in weather/weather.ts when absent. */
+  weather?: WeatherConfig;
 }
 
 export interface FixtureUser {

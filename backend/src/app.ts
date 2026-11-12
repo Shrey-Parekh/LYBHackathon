@@ -23,6 +23,10 @@ import { registerNotificationRoutes } from './notify/routes';
 import { registerStreamRoutes } from './stream/routes';
 import { registerDemoRoutes } from './sim/routes';
 import { staleTick } from './shipments/staleTick';
+import { DEFAULT_WEATHER_CONFIG, RouteWeather } from './weather/weather';
+import { registerWeatherRoutes } from './weather/routes';
+import { recomputeEta } from './shipments/recompute';
+import type { PendingHint } from './stream/hub';
 
 export interface BuildOptions {
   config: AppConfig;
@@ -53,6 +57,11 @@ export async function buildApp(opts: BuildOptions): Promise<Built> {
     hub: new StreamHub(),
     notifier: new InAppNotifier(),
     counterfactual: null,
+    weather: new RouteWeather(
+      () => (db.prepare('SELECT id, name, total_km, geometry FROM routes').all() as { id: string; name: string; total_km: number; geometry: string | null }[])
+        .map((r) => ({ ...r, geometry: r.geometry ? JSON.parse(r.geometry) : null })),
+      fixtures.config.weather ?? DEFAULT_WEATHER_CONFIG,
+    ),
   };
   const sim = simClock ? new Simulator(ctx, simClock, opts.autoTick ?? true) : null;
   ctx.counterfactual = sim;
@@ -94,6 +103,7 @@ export async function buildApp(opts: BuildOptions): Promise<Built> {
   registerDashboardRoutes(app, ctx, reg);
   registerNotificationRoutes(app, ctx, reg);
   registerStreamRoutes(app, ctx, reg);
+  registerWeatherRoutes(app, ctx, reg);
   if (sim && simClock) registerDemoRoutes(app, ctx, reg, sim, simClock);
 
   const openapi = buildOpenApi(reg);
@@ -104,6 +114,19 @@ export async function buildApp(opts: BuildOptions): Promise<Built> {
   // Real clock: the stale-position check runs every 5 minutes. (In demo mode the simulator runs it.)
   const timers: NodeJS.Timeout[] = [setInterval(() => ctx.hub.keepAlive(), 15_000)];
   if (!sim) timers.push(setInterval(() => staleTick(ctx), fixtures.config.demo.stale_tick_min * 60_000));
+  // Live mode: refresh the forecast on a timer and re-run the ETA of every truck on the road.
+  if (!sim && opts.autoTick !== false) {
+    const liveWeather = async () => {
+      await ctx.weather.refresh(true);
+      const hints: PendingHint[] = [];
+      const now = ctx.clock.nowIso();
+      const moving = db.prepare(`SELECT id FROM shipments WHERE status = 'IN_TRANSIT'`).all() as { id: string }[];
+      db.transaction(() => moving.forEach((s) => recomputeEta(ctx, s.id, now, null, 'EVENT', hints)))();
+      ctx.hub.publish(hints);
+    };
+    void liveWeather();
+    timers.push(setInterval(() => void liveWeather(), ctx.weather.cfg.refresh_min * 60_000));
+  }
 
   return {
     app,
