@@ -243,6 +243,9 @@ export interface ShipmentSummary {
   open_alert: Alert | null;
   version: number;
   live_demo?: boolean;
+  /** When the truck arrived (finished shipments), and the promise that on-time is judged against. */
+  arrived_at?: string | null;
+  original_promised_by?: string;
 }
 
 /** GET /routes/:id — ENTITY (5.2 routes, route_segments, route_alternatives) */
