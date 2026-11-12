@@ -43,6 +43,7 @@ The API loads `../database/seed/` when its scenario file exists and otherwise us
 | `src/decisions` | Decision service, ledger outcome | 5.7.3, 6.8 |
 | `src/sim` | Simulated clock, fixture loader, seed, replay simulator, demo endpoints | 10.4 |
 | `src/liveRouting` | Live shipment presets, seeded generation, simulated truck positions and TomTom requests | [Live demo](../README.md#run-a-live-shipment) |
+| `src/assistant` | Order-tracking assistant: per-user shipment summary sent to Groq (the only language-model call) | 2.3, [AI_USAGE.md](AI_USAGE.md) |
 | `src/auth` | scrypt passwords, HS256 tokens, `scopeFor(user)`, login rate limit | 9.1 |
 | `src/stream` | Server-sent change hints | 5.8 |
 | `src/dashboard` | On-time, delay causes, impact metrics | 10.3 |
@@ -51,7 +52,7 @@ The API loads `../database/seed/` when its scenario file exists and otherwise us
 ## Deployment
 
 - Start command: `npm start` (runs `src/server.ts` with `tsx`; no build step).
-- Environment variables: `PORT`, `JWT_SECRET` (required, at least 16 characters), `CORS_ORIGINS` (comma-separated web origins), `DATABASE_FILE`, `DEMO_MODE` (`true` for the demo), and `TOMTOM_API_KEY` (live routing).
+- Environment variables: `PORT`, `JWT_SECRET` (required, at least 16 characters), `CORS_ORIGINS` (comma-separated web origins), `DATABASE_FILE`, `DEMO_MODE` (`true` for the demo), `TOMTOM_API_KEY` (live routing), and `GROQ_API_KEY` with optional `GROQ_MODEL` (order-tracking assistant).
 - **Exactly one instance may run.** SQLite is a single file with one writer, and the stream hub and the simulator live in process memory. Do not scale horizontally or run two copies against the same file.
 - In demo mode the database is reseeded on every start, so an ephemeral disk is fine.
 - Nothing has been deployed yet; hosting is open item O2.

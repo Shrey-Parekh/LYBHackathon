@@ -478,3 +478,13 @@ export const RouteWeatherResponse = z.object({
 });
 
 export const Health = z.object({ status: z.literal('ok'), demo_mode: z.boolean(), now: IsoTime });
+
+// ---- Order-tracking assistant (Groq) ----
+export const AssistantStatus = z.object({ configured: z.boolean(), provider: z.literal('Groq'), model: z.string() });
+export const AssistantAsk = z.object({
+  question: z.string().trim().min(1).max(500),
+  // Earlier turns of this conversation, kept by the browser. Capped so a request stays small.
+  history: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().min(1).max(2000) })).max(10).default([]),
+});
+export type AssistantAsk = z.infer<typeof AssistantAsk>;
+export const AssistantAnswer = z.object({ answer: z.string(), provider: z.literal('Groq'), model: z.string() });

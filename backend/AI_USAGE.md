@@ -12,6 +12,18 @@ The hackathon rules allow generative AI and require teams to declare where and h
 
 | Integration of web app, API and seed (response shapes, driver-report placement), live route weather from Open-Meteo (`backend/src/weather/`, `frontend/src/components/WeatherPanel.tsx`), the OpenRouteService export option | Claude Code (Anthropic, Claude Opus 5.5), coding agent | Compared the web app's mock API with the real API endpoint by endpoint and aligned the API; walked the demo in a browser; added the weather service with stated thresholds and stubbed-network tests | Database (73) and backend (49) tests run; the team reviews the weather thresholds in `database/README.md` |
 
+| Order-tracking assistant (`backend/src/assistant/`, `backend/test/assistant.test.ts`, `frontend/src/components/AssistantChat.tsx` and its test) | Claude Code (Anthropic, Claude Fable 5.2), coding agent | Wrote the endpoint that builds a per-user shipment summary and calls Groq, the chat panel, and the tests; asked the live model as coordinator, customer and driver | Backend (59) and web app (25) tests run; the team reviews the prompt in `backend/src/assistant/assistant.ts` |
+
 ## Run-time AI in the product
 
-None at present. The ETA, delay risk, alerts and option ranking are deterministic rules (DESIGN.md section 6.9). If the optional "Where is my order?" assistant is built with a language model, record it here.
+One feature calls a language model while the product runs: the order-tracking assistant (the chat button in the top bar, bonus item on page 7 of the brief).
+
+| Item | Detail |
+|---|---|
+| Provider and model | Groq (`api.groq.com`), model `openai/gpt-oss-120b` by default; change it with `GROQ_MODEL` |
+| What is sent | The question, up to 10 earlier turns of the same chat, and a text summary of the shipments the signed-in user may already see (status, cargo, route, promise, ETA and its reasons). All of it is fictional data |
+| What is never sent | Passwords, email addresses, phone numbers, and any shipment outside the user's scope. A customer's summary has no driver details |
+| Guard rails | The model has no access to the database and cannot change anything. It is told to answer only from the summary and to say so when the answer is not there. 10 questions per user per minute. The panel states that answers are AI and that the screen is the record |
+| Switch | Off unless `GROQ_API_KEY` is set in `backend/.env`; the key stays on the server |
+
+Everything else is unchanged: the ETA, delay risk, alerts and option ranking are deterministic rules (DESIGN.md section 6.9), and the assistant only repeats their results.
