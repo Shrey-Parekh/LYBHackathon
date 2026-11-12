@@ -64,7 +64,12 @@ Every role has a chat button in the top bar. It answers questions such as "Where
 
 ### Upload and download an invoice
 
-On a shipment's page the coordinator has an **Invoice** card: **Upload PDF** adds the invoice (PDF only, up to 2 MB) and **Replace PDF** swaps it. The customer is notified, and the same card on their delivery page has a **Download** button. Drivers never see invoices. The file is stored in the database, so **Reset to 08:50** removes it.
+On a shipment's page the coordinator has an **Invoice** card with two ways to add one:
+
+- **Generate invoice** builds a one-page PDF from the shipment itself: customer, order, product, quantity, vehicle and dates, priced at a fictional rate per tonne plus GST. The rates are in [`database/seed/config.json`](database/seed/config.json) under `invoice` and explained in the [database README](database/README.md#generated-invoices).
+- **Upload PDF** takes your own file (PDF only, up to 2 MB). Ready-made samples for the five demo shipments are in [`database/samples/invoices/`](database/samples/invoices/).
+
+Either one replaces the invoice already there. The customer is notified, and the same card on their delivery page has a **Download** button. Drivers never see invoices. The file is stored in the database, so **Reset to 08:50** removes it.
 
 ### Preview an electric van
 

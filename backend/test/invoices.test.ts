@@ -1,6 +1,7 @@
 // Invoice upload and download: who may do what, what counts as a PDF, and that a reset clears it.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MAX_INVOICE_BYTES, safeFilename } from '../src/invoices/routes';
+import { DEFAULT_INVOICE_RATES, inr, invoiceAmounts } from '../src/invoices/invoicePdf';
 import { REAL_FIXTURES_DIR } from '../src/sim/fixtures';
 import { COORD, CUST1, DRIVER1, makeApp, type TestApp } from './helpers';
 
@@ -79,5 +80,38 @@ describe('invoices', () => {
 
     expect((await t.req('POST', '/demo/reset', await t.login(COORD))).status).toBe(200);
     expect((await download(CUST1, 'SHP-1001')).statusCode).toBe(404);
+  });
+
+  it('generates the invoice from the shipment data at the seed rates', async () => {
+    const coord = await t.login(COORD);
+    expect((await t.req('POST', '/shipments/SHP-1001/invoice/generate', await t.login(CUST1))).status).toBe(403);
+    expect((await t.req('POST', '/shipments/SHP-NOPE/invoice/generate', coord)).status).toBe(404);
+    const made = await t.req('POST', '/shipments/SHP-1001/invoice/generate', coord);
+    expect(made.status).toBe(201);
+    expect(made.body).toMatchObject({ filename: 'INV-5001.pdf', uploaded_by_name: 'Meera Kulkarni' });
+
+    const got = await download(CUST1, 'SHP-1001');
+    expect(got.rawPayload.length).toBe(made.body.size_bytes);
+    const text = got.rawPayload.toString('latin1');
+    expect(text.startsWith('%PDF-1.4')).toBe(true);
+    // 24 t of polypropylene homopolymer at INR 1,04,000 per tonne, plus 9% + 9% GST.
+    for (const part of ['Deccan Mouldings Pvt Ltd', 'ORD-5001', 'SHP-1001', 'MH 99 SB 4127', '(24.00)', '(1,04,000.00)', '(24,96,000.00)', '(2,24,640.00)', '(29,45,280.00)', 'Not a valid tax invoice']) {
+      expect(text, part).toContain(part);
+    }
+    const note = (await t.req('GET', '/notifications', await t.login(CUST1))).body.find((n: any) => n.kind === 'INVOICE_READY');
+    expect(note.title).toBe('Invoice ready for order ORD-5001');
+  });
+
+  it('works out amounts: rate by product, GST split in two, Indian digit grouping', () => {
+    const cfg = DEFAULT_INVOICE_RATES;
+    expect(invoiceAmounts({ order_id: 'ORD-5002', product: 'HDPE pellets, bagged', quantity_t: 24 }, cfg)).toEqual({
+      invoice_no: 'INV-5002', hsn: '3901', rate_per_t_inr: 108000, taxable_inr: 2592000, cgst_inr: 233280, sgst_inr: 233280, total_inr: 3058560,
+    });
+    // "LLDPE" contains "LDPE": the more specific rule comes first.
+    expect(invoiceAmounts({ order_id: 'ORD-1', product: 'LLDPE film grade, bagged', quantity_t: 1 }, cfg).rate_per_t_inr).toBe(110000);
+    expect(invoiceAmounts({ order_id: 'ORD-1', product: 'Polypropylene copolymer, bagged', quantity_t: 1 }, cfg).rate_per_t_inr).toBe(112000);
+    expect(invoiceAmounts({ order_id: 'ORD-LIVE-001', product: 'Mystery resin', quantity_t: 0.6 }, cfg)).toMatchObject({ invoice_no: 'INV-LIVE-001', hsn: '39', taxable_inr: 63000, total_inr: 74340 });
+    expect([inr(999), inr(1000), inr(123456.5), inr(29452800)]).toEqual(['999.00', '1,000.00', '1,23,456.50', '2,94,52,800.00']);
+    expect(t.ctx.fixtures.config.invoice).toEqual(cfg); // the seed carries the same figures as the fallback
   });
 });

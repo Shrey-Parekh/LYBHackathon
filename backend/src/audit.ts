@@ -18,6 +18,7 @@ export type AuditAction =
   | 'DEMO_RESET'
   | 'ASSISTANT_ASKED'
   | 'INVOICE_UPLOADED'
+  | 'INVOICE_GENERATED'
   | 'INVOICE_DOWNLOADED';
 
 export function audit(
