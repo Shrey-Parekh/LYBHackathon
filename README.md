@@ -62,6 +62,10 @@ Use the email and password from [`database/seed/users.json`](database/seed/users
 
 Every role has a chat button in the top bar. It answers questions such as "Where is my order?" or "Which shipments are at risk?" from the shipments that person may see, using a language model from Groq. Set `GROQ_API_KEY` in `backend/.env` (free key from console.groq.com/keys) and restart; without the key the panel says the assistant is switched off. Details and limits are in [AI_USAGE.md](backend/AI_USAGE.md#run-time-ai-in-the-product).
 
+### Upload and download an invoice
+
+On a shipment's page the coordinator has an **Invoice** card: **Upload PDF** adds the invoice (PDF only, up to 2 MB) and **Replace PDF** swaps it. The customer is notified, and the same card on their delivery page has a **Download** button. Drivers never see invoices. The file is stored in the database, so **Reset to 08:50** removes it.
+
 ### Preview an electric van
 
 With a Mumbai shipment selected, expand **Preview electric van** and click **Check EV route**. Try 60% starting charge, then 25% to show how a lower charge can add a stop. TomTom estimates the route energy, arrival charge, and any charging stops for a fictional 40 kWh van and a 20% arrival reserve. The estimate includes the shipment's unloading time. This is a pre-dispatch planning check. **Start live shipment** starts the standard tracking demo.

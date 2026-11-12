@@ -44,6 +44,7 @@ The API loads `../database/seed/` when its scenario file exists and otherwise us
 | `src/sim` | Simulated clock, fixture loader, seed, replay simulator, demo endpoints | 10.4 |
 | `src/liveRouting` | Live shipment presets, seeded generation, simulated truck positions and TomTom requests | [Live demo](../README.md#run-a-live-shipment) |
 | `src/assistant` | Order-tracking assistant: per-user shipment summary sent to Groq (the only language-model call) | 2.3, [AI_USAGE.md](AI_USAGE.md) |
+| `src/invoices` | Invoice PDF upload (coordinator) and download (coordinator, the shipment's customer) | 2.3 |
 | `src/auth` | scrypt passwords, HS256 tokens, `scopeFor(user)`, login rate limit | 9.1 |
 | `src/stream` | Server-sent change hints | 5.8 |
 | `src/dashboard` | On-time, delay causes, impact metrics | 10.3 |
