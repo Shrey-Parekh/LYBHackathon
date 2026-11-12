@@ -102,7 +102,7 @@ export function evaluateOptions(input: OptionInput): OptionResult {
       previous: null,
     };
     const p = computeEta(hypo, now, cfg);
-    const addedKm = alt.total_km - alt.current_total_km;
+    const addedKm = Math.round((alt.total_km - alt.current_total_km) * 10) / 10; // live routes give metres; show 0.1 km
     options.push({
       id,
       type: 'REROUTE',
@@ -113,7 +113,7 @@ export function evaluateOptions(input: OptionInput): OptionResult {
       projected_risk_level: p.risk_level,
       improvement_min: Math.round(minutesBetween(p.eta, cont.eta)),
       added_km: addedKm,
-      added_cost_inr: Math.max(0, addedKm) * input.cost_per_km_inr,
+      added_cost_inr: Math.round(Math.max(0, addedKm) * input.cost_per_km_inr),
       params: { alt_route_id: alt.alt_route_id },
     });
   }
