@@ -61,6 +61,20 @@ describe('real seed: SHP-1001 main story', () => {
   });
 });
 
+describe('real seed: the driver screen report has no location', () => {
+  it('places the accident 15 km ahead (km 75), so the reroute is still recommended', async () => {
+    t.advanceTo(T['09:30']);
+    const report = { event_id: uuid(), type: 'DISRUPTION_REPORTED', payload: { disruption_id: uuid(), category: 'ACCIDENT', expected_delay_min: 60 } };
+    expect((await t.req('POST', '/shipments/SHP-1001/events', await t.login(DRIVER1), report)).status).toBe(201);
+    const s = await shipment('SHP-1001');
+    expect(s.active_disruptions[0].at_km).toBe(75);
+    expect(s.current_eta.eta).toBe('2026-11-16T06:55:00Z');
+    const opts = (await t.req('GET', `/alerts/${(await openAlert('SHP-1001')).id}/options`, c)).body;
+    expect(opts.recommended_option_id).toBe('OPT-REROUTE-RTE-01B');
+    expect(opts.options.find((o: any) => o.id === 'OPT-REROUTE-RTE-01B').projected_eta).toBe('2026-11-16T06:09:00Z');
+  });
+});
+
 describe('real seed: SHP-1002 and SHP-1003', () => {
   it('SHP-1002 is HIGH after the scripted weather report; reroute barred by weight; RESCHEDULE recommended', async () => {
     expect((await shipment('SHP-1002')).current_eta.risk_level).toBe('LOW');

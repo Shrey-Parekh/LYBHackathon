@@ -23,6 +23,8 @@ export interface FixtureConfig {
   };
   impact: { cost_per_late_hour_inr: number };
   demo: { speed: number; position_interval_min: number; stale_tick_min: number };
+  /** Where a driver's report without a location is placed; defaults to 15 km ahead (events/ingest.ts). */
+  disruptions?: { report_ahead_km: number };
 }
 
 export interface FixtureUser {
@@ -64,6 +66,8 @@ export interface Scenario {
   scenario_id: string;
   clock_start: string;
   pause_at: string[];
+  /** Optional label per pause time, shown while the replay waits for the presenter. */
+  pause_labels?: Record<string, string>;
   standby_vehicles: { vehicle_reg: string; transporter_id: string; available: boolean }[];
   orders: {
     id: string;
