@@ -152,6 +152,20 @@ export async function mockFetch(input: RequestInfo | URL, init: RequestInit = {}
     return json(200, { id, read_at: world.now });
   }
 
+  if (path === "/assistant") return json(200, { configured: true, provider: "Groq", model: "mock (no language model)" });
+  if (path === "/assistant/ask" && method === "POST") {
+    // No language model in the mock: a fixed-form answer from the same data the screens show.
+    const question = String(body?.question ?? "").trim();
+    if (!question) return err(422, "VALIDATION_FAILED", "Invalid body");
+    const mine = world.shipments.filter((s) => canSee(user, s));
+    const asked = mine.find((s) => question.toUpperCase().includes(s.id)) ?? mine.find((s) => s.status === "IN_TRANSIT") ?? mine[0];
+    const eta = asked?.current_eta;
+    const answer = !asked
+      ? "I do not have any shipments for you."
+      : `${asked.id} is ${asked.status.toLowerCase().replace(/_/g, " ")}.${eta ? ` ${eta.headline}.` : ""} (Mock answer: the real assistant needs the API.)`;
+    return json(200, { answer, provider: "Groq", model: "mock (no language model)" });
+  }
+
   if (path === "/weather/routes") {
     if (!isCoord) return err(403, "FORBIDDEN", "Not allowed for this role");
     return json(200, MOCK_WEATHER);

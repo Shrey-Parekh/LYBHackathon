@@ -12,6 +12,7 @@ import { duration, easeOut, fadeIn } from "../lib/motion";
 import { setTheme, useTheme } from "../lib/theme";
 import { clock } from "../lib/time";
 import { NotificationBell } from "./NotificationBell";
+import { AssistantChat } from "./AssistantChat";
 
 export const FICTIONAL_NOTICE = "Fictional demo data. Plant X is a fictional company.";
 
@@ -154,6 +155,7 @@ function CoordinatorShell() {
         <div className="sticky top-0 z-[800] flex h-14 items-center justify-end gap-2 border-b border-line bg-canvas/90 px-4 backdrop-blur-sm sm:px-6">
           {DEMO_MODE && <ReplayClock />}
           <StreamIndicator />
+          <AssistantChat role="COORDINATOR" />
           <NotificationBell />
         </div>
         <Main />
@@ -198,6 +200,7 @@ function SimpleShell({ role }: { role: Role }) {
           <span className="rounded-sm bg-sunken px-2 py-0.5 text-meta font-medium text-ink-2">{role === "DRIVER" ? "Driver" : "Customer"}</span>
           <div className="ml-auto flex items-center gap-1">
             <StreamIndicator />
+            <AssistantChat role={role} />
             <NotificationBell />
             {!narrow && <span className="hidden px-2 text-meta text-muted lg:inline">{session.user.name}</span>}
             <ThemeToggle />
