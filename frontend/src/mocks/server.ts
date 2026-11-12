@@ -107,6 +107,16 @@ export async function mockFetch(input: RequestInfo | URL, init: RequestInit = {}
   }
 
   // Invoices are kept in memory only: a page reload or a demo reset clears them.
+  if ((m = path.match(/^\/shipments\/([\w-]+)\/invoice\/generate$/)) && method === "POST") {
+    const s = find(m[1]);
+    if (!isCoord) return err(403, "FORBIDDEN", "Not allowed for this role");
+    if (!s) return err(404, "NOT_FOUND", "Shipment not found");
+    // The mock has no PDF builder: a one-line placeholder stands in for the API's real invoice.
+    const file = new Blob([`%PDF-1.4\n% Mock invoice for ${s.order.id}. The real API builds the full page.\n%%EOF\n`], { type: "application/pdf" });
+    const meta = { filename: `INV-${s.order.id.replace(/^ORD-/, "")}.pdf`, size_bytes: file.size, uploaded_at: world.now, uploaded_by_name: user.name };
+    invoices.set(s.id, { ...meta, file });
+    return json(201, meta);
+  }
   if ((m = path.match(/^\/shipments\/([\w-]+)\/invoice$/))) {
     const s = find(m[1]);
     if (user.role === "DRIVER" || (method === "POST" && !isCoord)) return err(403, "FORBIDDEN", "Not allowed for this role");
