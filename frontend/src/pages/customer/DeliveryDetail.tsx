@@ -6,7 +6,7 @@ import { ApiError } from "../../api/client";
 import { Card, CardHeader, EmptyState, ErrorNote, KeyValue, Loading, Skeleton, StatusTag } from "../../components/ui";
 import { EtaPanel } from "../../components/EtaPanel";
 import { ShipmentMap } from "../../components/ShipmentMap";
-import { MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
+import { JourneyBar, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
 import { clockTz, dateTimeTz } from "../../lib/time";
 
 /*
@@ -56,12 +56,12 @@ export function DeliveryDetail() {
   const myNotes = (notes.data ?? []).filter((n) => n.shipment_id === s.id);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-4xl space-y-5 px-4 py-8 sm:px-6 lg:py-10">
       <div>
         <Link to="/customer" className="inline-flex items-center gap-1.5 rounded-sm text-meta font-medium text-ink-2 hover:text-ink">
           <ArrowLeft size={14} weight="bold" aria-hidden /> My deliveries
         </Link>
-        <h1 className="mt-2 text-figure font-semibold tracking-tight">Order {s.order.id}</h1>
+        <h1 className="mt-2 text-figure font-semibold tracking-[-0.02em]">Order {s.order.id}</h1>
         <p className="text-body text-ink-2">
           {s.order.quantity_t} t {s.order.product.toLowerCase()} to {s.destination_name}
         </p>
@@ -79,6 +79,9 @@ export function DeliveryDetail() {
           <StatusTag status={s.status} />
         </CardHeader>
         <div className="p-4">
+          <div className="mb-4 px-1">
+            <JourneyBar from={routes[s.planned_route_id]?.origin ?? "Plant X"} to={s.destination_name} progressKm={s.last_position?.progress_km ?? null} totalKm={routes[s.active_route_id]?.total_km ?? null} status={s.status} />
+          </div>
           <ShipmentMap
             label={`Map of order ${s.order.id}. ${positionText(s, routes[s.active_route_id])}`}
             routes={layers.routes}

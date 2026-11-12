@@ -1,4 +1,4 @@
-import { Check, WarningCircle, WarningOctagon } from "@phosphor-icons/react";
+import { Check, Truck, WarningCircle, WarningOctagon } from "@phosphor-icons/react";
 import type { Alert, EtaSnapshot, Milestone, RouteDetail, ShipmentDetail } from "../api/contract";
 import { RISK_WORD, STATUS_WORD } from "../lib/risk";
 import { clock, clockTz } from "../lib/time";
@@ -20,7 +20,7 @@ export function MilestoneTimeline({ milestones, layout = "horizontal" }: { miles
               <span
                 aria-hidden
                 className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                  done ? (isCurrent ? "border-accent bg-accent text-white" : "border-ink-2 bg-ink-2 text-white") : "border-line-strong bg-surface"
+                  done ? (isCurrent ? "border-accent bg-accent text-on-accent" : "border-ink-2 bg-ink-2 text-surface") : "border-line-strong bg-surface"
                 }`}
               >
                 {done && <Check size={12} weight="bold" />}
@@ -113,4 +113,32 @@ export function shipmentLayers(
 
 export function RiskCell({ eta }: { eta: EtaSnapshot | null }) {
   return eta ? <RiskBadge level={eta.risk_level} /> : <span className="text-meta text-muted">No estimate</span>;
+}
+
+/*
+  Journey bar: how far along its route the truck is, from the API's progress_km and the route length.
+  The truck marker glides to each new position (CSS transform transition); reduced motion jumps.
+*/
+export function JourneyBar({ from, to, progressKm, totalKm, status }: { from: string; to: string; progressKm: number | null; totalKm: number | null; status: ShipmentDetail["status"] }) {
+  const done = status === "ARRIVED" || status === "DELIVERED";
+  const pct = done ? 100 : progressKm !== null && totalKm ? Math.min(100, Math.max(0, (progressKm / totalKm) * 100)) : 0;
+  return (
+    <div>
+      <div className="relative h-8 [container-type:inline-size]" aria-hidden>
+        <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-sunken" />
+        <div className="journey-fill absolute left-0 top-1/2 h-1.5 w-full origin-left -translate-y-1/2 rounded-full bg-accent" style={{ transform: `translateY(-50%) scaleX(${pct / 100})` }} />
+        {/* Zero-width anchor moved with container units, so the marker can never widen the page */}
+        <div className="journey-truck absolute inset-y-0 left-0 w-0" style={{ transform: `translateX(${pct}cqw)` }}>
+          <span className="absolute top-1/2 inline-flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-raised bg-accent text-on-accent">
+            <Truck size={14} weight="fill" />
+          </span>
+        </div>
+      </div>
+      <div className="mt-1 grid grid-cols-[1fr_auto_1fr] gap-3 text-meta text-muted">
+        <span className="min-w-0">{from}</span>
+        <span className="tnum whitespace-nowrap font-medium text-ink-2">{done ? "Arrived" : progressKm !== null && totalKm ? `km ${progressKm} of ${totalKm}` : "Not departed"}</span>
+        <span className="text-right">{to}</span>
+      </div>
+    </div>
+  );
 }

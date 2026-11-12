@@ -1,4 +1,6 @@
-import type { EtaSnapshot } from "../api/contract";
+import { motion } from "motion/react";
+import type { EtaFactor, EtaSnapshot } from "../api/contract";
+import { duration, easeOut } from "../lib/motion";
 import { clock, clockTz, duration as fmtDuration } from "../lib/time";
 import { ConfidenceTag, CrossFade, RiskBadge } from "./ui";
 
@@ -68,6 +70,8 @@ export function EtaPanel({
 
       <p className="mt-4 text-lead font-medium text-ink">{snapshot.headline}</p>
 
+      <FactorBar snapshot={snapshot} />
+
       <table className="tnum mt-3 w-full text-body">
         <caption className="sr-only">
           {audience === "customer" ? "Why this ETA" : "ETA factors"}, in minutes from {clockTz(snapshot.computed_at)}
@@ -86,7 +90,10 @@ export function EtaPanel({
           {snapshot.factors.map((f) => (
             <tr key={`${snapshot.id}-${f.code}`} className={`border-b border-line ${changed(f.code, f.minutes) ? "row-changed" : ""}`}>
               <th scope="row" className="py-2 pr-3 text-left font-normal text-ink-2">
-                {f.label}
+                <span className="flex items-start gap-2">
+                  <span aria-hidden className={`mt-[7px] h-2.5 w-2.5 shrink-0 rounded-[3px] ${segmentClass(f)}`} />
+                  {f.label}
+                </span>
               </th>
               <td className="py-2 text-right font-medium text-ink">{f.minutes}</td>
             </tr>
@@ -108,6 +115,39 @@ export function EtaPanel({
           {stale ? ` No position for ${snapshot.position_age_min} min.` : ""}
         </p>
       )}
+    </div>
+  );
+}
+
+/*
+  Where the minutes come from: one segment per factor, sized by its minutes (the API's numbers).
+  Driving and planned stops are neutral; slow traffic uses the "at risk" tone and reported problems
+  the "delayed" tone. Colour is a reading aid only: every segment is named in the table below.
+  Segments grow in from the left whenever a new snapshot arrives (transform only).
+*/
+export function segmentClass(f: EtaFactor): string {
+  if (f.code === "BASE_TRAVEL") return "bg-ink-2";
+  if (f.code === "DWELL") return "bg-line-strong";
+  if (f.code === "CONGESTION") return "bg-medium";
+  if (f.code === "STALE_POSITION" || f.minutes === 0) return "bg-line";
+  return "bg-high";
+}
+
+function FactorBar({ snapshot }: { snapshot: EtaSnapshot }) {
+  const parts = snapshot.factors.filter((f) => f.minutes > 0);
+  if (!parts.length) return null;
+  return (
+    <div aria-hidden className="mt-4 flex h-3 w-full gap-[3px] overflow-hidden rounded-full">
+      {parts.map((f, i) => (
+        <motion.span
+          key={`${snapshot.id}-${f.code}`}
+          className={`h-full origin-left first:rounded-l-full last:rounded-r-full ${segmentClass(f)}`}
+          style={{ flexGrow: f.minutes, flexBasis: 0, minWidth: 6 }}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: duration.slow * 2, ease: easeOut, delay: i * 0.08 }}
+        />
+      ))}
     </div>
   );
 }

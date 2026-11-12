@@ -74,7 +74,7 @@ export function DemoControls() {
                     type="button"
                     aria-pressed={d.speed === sp}
                     onClick={() => run("/demo/clock", { paused: d.paused, speed: sp })}
-                    className={`tnum h-10 min-w-16 px-3 text-body font-medium first:rounded-l-md last:rounded-r-md ${d.speed === sp ? "bg-accent text-white" : "bg-surface text-ink-2 hover:bg-sunken"}`}
+                    className={`tnum h-10 min-w-16 px-3 text-body font-medium first:rounded-l-md last:rounded-r-md ${d.speed === sp ? "bg-accent text-on-accent" : "bg-surface text-ink-2 hover:bg-sunken"}`}
                   >
                     {sp}×
                   </button>
