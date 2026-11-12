@@ -25,6 +25,7 @@ import { registerDemoRoutes } from './sim/routes';
 import { staleTick } from './shipments/staleTick';
 import { DEFAULT_WEATHER_CONFIG, RouteWeather } from './weather/weather';
 import { registerWeatherRoutes } from './weather/routes';
+import { registerDriverOpsRoutes } from './driverOps/routes';
 import { recomputeEta } from './shipments/recompute';
 import type { PendingHint } from './stream/hub';
 import { LiveRouteDemo } from './liveRouting/demo';
@@ -75,7 +76,8 @@ export async function buildApp(opts: BuildOptions): Promise<Built> {
   if (sim) sim.reset(null);
   else if (!db.prepare('SELECT 1 FROM users LIMIT 1').get()) seedDatabase(ctx, null);
 
-  const app = Fastify({ logger: opts.logger ?? false, trustProxy: true });
+  // 8 MB body limit: a 5 MB delivery photo or invoice arrives base64-encoded (about a third larger).
+  const app = Fastify({ logger: opts.logger ?? false, trustProxy: true, bodyLimit: 8 * 1024 * 1024 });
   await app.register(cors, {
     origin: (origin, cb) => cb(null, !origin || config.corsOrigins.includes(origin)),
   });
@@ -109,6 +111,7 @@ export async function buildApp(opts: BuildOptions): Promise<Built> {
   registerNotificationRoutes(app, ctx, reg);
   registerStreamRoutes(app, ctx, reg);
   registerWeatherRoutes(app, ctx, reg);
+  registerDriverOpsRoutes(app, ctx, reg);
   if (sim && simClock) registerDemoRoutes(app, ctx, reg, sim, simClock);
   if (ctx.liveRouteDemo) registerLiveRouteDemo(app, ctx, reg, ctx.liveRouteDemo);
 

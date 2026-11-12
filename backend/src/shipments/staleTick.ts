@@ -4,6 +4,7 @@ import type { Ctx } from '../ctx';
 import type { PendingHint } from '../stream/hub';
 import { minutesBetween } from '../time';
 import { recomputeEta } from './recompute';
+import { detectStops } from '../driverOps/routes';
 
 export function staleTick(ctx: Ctx): number {
   const now = ctx.clock.nowIso();
@@ -21,6 +22,7 @@ export function staleTick(ctx: Ctx): number {
         n++;
       }
     }
+    detectStops(ctx, now, hints);
   })();
   ctx.hub.publish(hints);
   return n;

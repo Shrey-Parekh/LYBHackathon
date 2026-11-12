@@ -36,6 +36,10 @@ export function migrate(db: Db): void {
 
 /** Every data table, children before parents, so rows can be deleted in this order. */
 export const DATA_TABLES = [
+  'documents',
+  'checkins',
+  'stops',
+  'driver_checks',
   'audit_events',
   'notifications',
   'decisions',

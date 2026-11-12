@@ -19,6 +19,12 @@ export const NotificationKind = z.enum([
   'BACK_ON_SCHEDULE',
   'TRACKING_LOST',
   'DELIVERED',
+  'DELIVERY_PHOTO',
+  'DELIVERY_VERIFIED',
+  'INVOICE',
+  'CHECKIN_REQUEST',
+  'CHECKIN_REPLY',
+  'DRIVER_STOP',
 ]);
 
 export const ErrorResponse = z.object({

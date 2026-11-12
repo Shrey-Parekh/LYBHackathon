@@ -16,7 +16,14 @@ export type AuditAction =
   | 'DECISION_APPROVED'
   | 'NOTIFICATION_SENT'
   | 'ACCESS_DENIED'
-  | 'DEMO_RESET';
+  | 'DEMO_RESET'
+  | 'DRIVER_CHECK_PASSED'
+  | 'DOCUMENT_UPLOADED'
+  | 'DOCUMENT_VERIFIED'
+  | 'CHECKIN_REQUESTED'
+  | 'CHECKIN_ANSWERED'
+  | 'STOP_STARTED'
+  | 'STOP_ENDED';
 
 export function audit(
   db: Db,

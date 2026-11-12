@@ -10,7 +10,13 @@ export type NotificationKind =
   | 'DECISION_APPLIED'
   | 'BACK_ON_SCHEDULE'
   | 'TRACKING_LOST'
-  | 'DELIVERED';
+  | 'DELIVERED'
+  | 'DELIVERY_PHOTO'
+  | 'DELIVERY_VERIFIED'
+  | 'INVOICE'
+  | 'CHECKIN_REQUEST'
+  | 'CHECKIN_REPLY'
+  | 'DRIVER_STOP';
 
 export interface NewNotification {
   user_id: string;
