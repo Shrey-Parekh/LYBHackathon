@@ -208,7 +208,8 @@ export function CountUp({ value, className = "" }: { value: number; className?: 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    // A hidden tab never runs animation frames, so it would freeze mid-count: show the value at once.
+    if (document.hidden || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       el.textContent = String(value);
       from.current = value;
       return;
@@ -216,9 +217,11 @@ export function CountUp({ value, className = "" }: { value: number; className?: 
     const controls = animate(from.current, value, {
       duration: 0.8,
       ease: [0.22, 1, 0.36, 1],
-      onUpdate: (v) => (el.textContent = String(Math.round(v))),
+      onUpdate: (v) => {
+        from.current = v; // an interrupted count resumes from what is on screen
+        el.textContent = String(Math.round(v));
+      },
     });
-    from.current = value;
     return () => controls.stop();
   }, [value]);
   return (

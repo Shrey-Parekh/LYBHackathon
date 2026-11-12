@@ -24,7 +24,7 @@ export function DemoControls() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-6 sm:px-6">
-      <h1 className="text-figure font-semibold tracking-tight">Demo controls</h1>
+      <h1 className="text-figure font-[750] tracking-[-0.025em]">Demo controls</h1>
       {state.error && <ErrorNote what="the demo state" error={state.error} onRetry={() => state.refetch()} loadedAt={state.dataUpdatedAt || undefined} />}
       {cmd.error && <ErrorNote what="the demo command" error={cmd.error} onRetry={() => cmd.reset()} />}
 

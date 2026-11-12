@@ -52,7 +52,7 @@ export function OptionsTable({ set, onApprove, disabled }: { set: OptionSet; onA
               >
                 <th scope="row" className={`px-5 py-3 text-left font-normal ${recommended ? "border-l-4 border-accent" : "border-l-4 border-transparent"}`}>
                   {recommended && (
-                    <span className="mb-1 inline-flex items-center gap-1 text-meta font-semibold text-accent">
+                    <span className="mb-1 inline-flex items-center gap-1 text-meta font-semibold text-accent-ink">
                       <Star size={14} weight="fill" aria-hidden /> Recommended
                     </span>
                   )}

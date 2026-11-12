@@ -38,7 +38,7 @@ export function DeliveryDetail() {
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
         {notFound ? (
           <EmptyState title="We could not find that delivery.">
-            <Link to="/customer" className="text-accent underline">
+            <Link to="/customer" className="link">
               Back to my deliveries
             </Link>
           </EmptyState>

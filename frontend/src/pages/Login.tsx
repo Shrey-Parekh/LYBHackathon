@@ -121,7 +121,7 @@ export function Login() {
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center justify-between gap-2 text-body font-semibold">
                           {busy === a.email ? "Signing in…" : a.role}
-                          <ArrowRight size={14} weight="bold" aria-hidden className="text-muted transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-accent" />
+                          <ArrowRight size={14} weight="bold" aria-hidden className="text-muted transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-accent-ink" />
                         </span>
                         <span className="block text-meta text-muted">{a.who}</span>
                       </span>
@@ -150,7 +150,7 @@ function Field({ id, label, type, autoComplete, value, onChange }: { id: string;
         required
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 w-full rounded-md border border-line-strong bg-raised px-3 text-body text-ink outline-none transition-[border-color,box-shadow] duration-150 focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_var(--accent-soft)]"
+        className="h-11 w-full rounded-md border border-line-strong bg-raised px-3 text-body text-ink outline-none transition-[border-color,box-shadow] duration-150 focus-visible:border-ink focus-visible:shadow-[0_0_0_3px_var(--accent-soft)]"
       />
     </div>
   );

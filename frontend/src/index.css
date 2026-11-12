@@ -1,80 +1,83 @@
 @import "tailwindcss";
-@import "@fontsource-variable/bricolage-grotesque";
-@import "@fontsource-variable/figtree";
-@import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource-variable/archivo/wdth.css";
 @import "leaflet/dist/leaflet.css";
 
 /*
-  Design tokens. Every colour, size, radius and duration used by the app comes from here.
-  Palette: powder-blue base, pale-white surfaces, one green accent for the primary action, focus and
-  selection. Risk keeps its own tones (blue "On schedule", amber "At risk", red "Delayed") and always
-  comes with an icon and a word, so the green accent is never read as a risk level.
+  Design tokens: "Kilometre stone". The product lives on Indian highways, so the palette is the road's own:
+  concrete page, asphalt ink and rail, marker yellow (road paint) for the primary action and selection,
+  and sign blue (expressway signs) for links and lines on light surfaces, where yellow is too pale to read.
+  Risk keeps its own tones (go green "On schedule", caution orange "At risk", stop red "Delayed") and
+  always comes with an icon and a word, so no colour carries meaning on its own.
+  Yellow is only ever a fill under asphalt text (contrast > 9:1), never text on a light surface.
   Light is the default (projectors wash out dark themes); dark is a manual toggle (data-theme="dark").
-  Contrast of every text/background pair is at least 4.5:1 in both themes (docs/design-tokens.md).
-  Radius rule: badges 6px, controls 10px, panels 16px.
+  Radius rule: badges 4px, controls 8px, panels 14px. Road graphics are pill-shaped.
 */
 :root {
-  --canvas: #d3e4f1;
-  --surface: #fbfcfa;
+  --canvas: #e9ecee;
+  --surface: #fbfcfc;
   --raised: #ffffff;
-  --sunken: #e6eff6;
-  --line: #c4d6e4;
-  --line-strong: #9db6ca;
-  --ink: #14263a;
-  --ink-2: #2b4258;
-  --muted: #4b6074;
-  --accent: #17794a;
-  --accent-hover: #11603a;
-  --accent-soft: #dcf0e3;
-  --on-accent: #ffffff;
-  --rail: #13283c;
-  --rail-2: #1d3850;
-  --rail-ink: #d6e4ef;
-  --rail-muted: #93abc0;
-  --rail-accent: #7fd6a4;
-  --low: #24577c;
-  --low-soft: #dbe8f3;
-  --medium: #7a4c00;
-  --medium-soft: #f6e7c6;
-  --high: #9a3228;
-  --high-soft: #f6dcd7;
-  --chart-ink: #2b4258;
-  --panel-shadow: 0 1px 2px rgb(20 38 58 / 0.05), 0 10px 30px -14px rgb(20 38 58 / 0.22);
-  --glow: rgb(255 255 255 / 0.6);
+  --sunken: #dfe3e7;
+  --line: #d2d8de;
+  --line-strong: #a7b1bc;
+  --ink: #1b2230;
+  --ink-2: #333e50;
+  --muted: #555f6e;
+  --accent: #ffc531;
+  --accent-hover: #ffb300;
+  --accent-soft: #fff1c7;
+  --accent-ink: #1446a0;
+  --on-accent: #1b2230;
+  --rail: #1b2230;
+  --rail-2: #2a3446;
+  --rail-ink: #d5dbe4;
+  --rail-muted: #97a2b3;
+  --rail-accent: #ffc531;
+  --low: #1f6b57;
+  --low-soft: #d9efe7;
+  --medium: #9c4500;
+  --medium-soft: #fbe5d2;
+  --high: #b3261e;
+  --high-soft: #f9dcd9;
+  --chart-ink: #333e50;
+  --road: #2b3240;
+  --panel-shadow: 0 1px 0 rgb(27 34 48 / 0.04), 0 12px 28px -18px rgb(27 34 48 / 0.35);
+  --glow: rgb(255 255 255 / 0.7);
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --canvas: #0f1c28;
-  --surface: #152535;
-  --raised: #1a2d40;
-  --sunken: #1b3045;
-  --line: #24394d;
-  --line-strong: #3a5570;
-  --ink: #e3edf5;
-  --ink-2: #c2d3e2;
-  --muted: #93a8bb;
-  --accent: #6fd19a;
-  --accent-hover: #8fe0b2;
-  --accent-soft: #15372a;
-  --on-accent: #06210f;
-  --rail: #0a1520;
-  --rail-2: #142636;
-  --low: #9cc6e8;
-  --low-soft: #16324a;
-  --medium: #e3b66a;
-  --medium-soft: #3a2e15;
-  --high: #f0a096;
-  --high-soft: #3d201c;
-  --chart-ink: #c2d3e2;
-  --panel-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px -16px rgb(0 0 0 / 0.6);
-  --glow: rgb(140 190 230 / 0.08);
+  --canvas: #12161e;
+  --surface: #1a202b;
+  --raised: #202836;
+  --sunken: #161b24;
+  --line: #2b3444;
+  --line-strong: #465163;
+  --ink: #edf0f4;
+  --ink-2: #c9d0da;
+  --muted: #9aa5b5;
+  --accent: #ffc531;
+  --accent-hover: #ffd466;
+  --accent-soft: #3a3013;
+  --accent-ink: #8fb4ff;
+  --on-accent: #1b2230;
+  --rail: #0e1219;
+  --rail-2: #1f2633;
+  --low: #7fd3b7;
+  --low-soft: #15342b;
+  --medium: #ffb37a;
+  --medium-soft: #3d2614;
+  --high: #ff9b92;
+  --high-soft: #41201d;
+  --chart-ink: #c9d0da;
+  --road: #0b0f15;
+  --panel-shadow: 0 1px 0 rgb(0 0 0 / 0.3), 0 14px 32px -18px rgb(0 0 0 / 0.7);
+  --glow: rgb(255 197 49 / 0.04);
   color-scheme: dark;
 }
 
 @theme inline {
-  --font-sans: "Figtree Variable", system-ui, sans-serif;
-  --font-display: "Bricolage Grotesque Variable", "Figtree Variable", sans-serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-sans: "Archivo Variable", system-ui, sans-serif;
+  --font-display: "Archivo Variable", system-ui, sans-serif;
+  --font-mono: "Archivo Variable", system-ui, sans-serif;
 
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
@@ -88,6 +91,10 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-road: var(--road);
+  --color-accent-ink: var(--accent-ink);
+  --color-road: var(--road);
   --color-on-accent: var(--on-accent);
   --color-rail: var(--rail);
   --color-rail-2: var(--rail-2);
@@ -117,9 +124,12 @@
   --text-driver: 2.75rem;
   --text-driver--line-height: 3rem;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --text-hero: clamp(2.6rem, 6.2vw, 5.4rem);
+  --text-hero--line-height: 0.98;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
 
   --duration-fast: 150ms;
   --duration-base: 220ms;
@@ -140,12 +150,28 @@
     font-size: 16px;
     -webkit-font-smoothing: antialiased;
   }
-  /* Display face for headings: Bricolage Grotesque, tight tracking */
+  /* Headings use Archivo's expanded width, like highway signage; body stays at normal width. */
   h1, h2, h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
-    font-optical-sizing: auto;
+    font-stretch: 112%;
+    letter-spacing: -0.015em;
   }
+  h1 { font-weight: 750; }
+  /* Signage width as a utility, for big numbers and the landing headline */
+  .wide { font-stretch: 125%; }
+  .hero-type { font-stretch: 100%; }
+  @media (min-width: 640px) { .hero-type { font-stretch: 125%; } }
+  .condensed { font-stretch: 82%; }
+  /* Links: sign-blue text with a marker-yellow underline that thickens on hover */
+  a.link {
+    color: var(--accent-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    transition: text-decoration-thickness var(--duration-fast) var(--ease-out-quiet);
+  }
+  a.link:hover { text-decoration-thickness: 4px; }
   /* Fine grain over the whole page: fixed, pointer-events none, never on a scrolling layer */
   body::after {
     content: "";
@@ -167,10 +193,12 @@
   .tnum {
     font-variant-numeric: tabular-nums;
   }
+  /* Focus: asphalt ring with a marker-yellow halo, visible on concrete, white and yellow alike */
   :focus-visible {
-    outline: 3px solid var(--accent);
+    outline: 2px solid var(--ink);
     outline-offset: 2px;
-    border-radius: 2px;
+    box-shadow: 0 0 0 5px var(--accent);
+    border-radius: 3px;
   }
   ::selection {
     background: var(--accent-soft);
@@ -214,9 +242,26 @@
   animation: route-draw 1200ms var(--ease-out-quiet) 1 both;
 }
 
+/* Lane markings flow past, so the road reads as live. */
+@keyframes lane-flow {
+  to { stroke-dashoffset: -128; }
+}
+.lane-flow {
+  animation: lane-flow 1.6s linear infinite;
+}
+/* A reported incident pulses once a second until it is cleared. */
+@keyframes pulse-ring {
+  from { transform: scale(1); opacity: 0.7; }
+  to { transform: scale(2.2); opacity: 0; }
+}
+.pulse-ring {
+  animation: pulse-ring 1.4s var(--ease-out-quiet) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
   .route-draw { animation: none; }
+  .lane-flow, .pulse-ring { animation: none; }
   *, *::before, *::after {
     scroll-behavior: auto !important;
   }

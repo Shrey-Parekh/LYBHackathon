@@ -23,13 +23,13 @@ function useChartColors() {
   useTheme();
   return {
     INK: token("--chart-ink"),
-    ACCENT: token("--accent"),
+    ACCENT: token("--accent-ink"),
     GRID: token("--line"),
     TEXT: token("--ink"),
     CURSOR: token("--sunken"),
     BORDER: token("--line-strong"),
     SURFACE: token("--raised"),
-    AXIS: { fontSize: 13, fill: token("--muted"), fontFamily: "Figtree Variable" },
+    AXIS: { fontSize: 13, fill: token("--muted"), fontFamily: "Archivo Variable" },
   };
 }
 
@@ -51,7 +51,7 @@ export function Dashboard() {
     <div className="mx-auto max-w-[1440px] space-y-5 px-4 py-6 sm:px-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-figure font-semibold tracking-tight">Performance</h1>
+          <h1 className="text-figure font-[750] tracking-[-0.025em]">Performance</h1>
           <p className="mt-1 text-body text-muted">Delivered shipments, measured against the original promise. Fictional history plus today's replay.</p>
         </div>
         <fieldset>
@@ -147,7 +147,7 @@ function Tile({ label, value, note, headline }: { label: string; value: string; 
       className={`rounded-md px-5 py-4 ${headline ? "bg-rail text-rail-ink" : "bg-raised"}`}
     >
       <dt className={`text-meta ${headline ? "text-rail-muted" : "text-muted"}`}>{label}</dt>
-      <dd className={`tnum mt-1 font-[family-name:var(--font-display)] font-semibold tracking-[-0.02em] ${headline ? "text-[2.75rem] leading-none text-[#f2f7fb]" : "text-figure text-ink"}`}>
+      <dd className={`tnum mt-1 wide font-[800] tracking-[-0.03em] ${headline ? "text-[2.75rem] leading-none text-[#f2f7fb]" : "text-figure text-ink"}`}>
         {/^\d+/.test(value) ? (
           <>
             <CountUp value={parseInt(value, 10)} />

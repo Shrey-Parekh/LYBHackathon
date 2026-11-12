@@ -50,7 +50,7 @@ export function AttentionQueue() {
     <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-figure font-semibold tracking-[-0.02em]">Attention</h1>
+          <h1 className="text-figure font-[750] tracking-[-0.025em]">Attention</h1>
           <p className="mt-1 text-body text-muted">Active shipments, most at risk first. Times are IST.</p>
         </div>
       </div>
@@ -60,7 +60,7 @@ export function AttentionQueue() {
         <SummaryTile label={RISK_WORD.HIGH} value={count("HIGH")} icon={<RiskIcon level="HIGH" size={18} />} tone="text-high" />
         <SummaryTile label={RISK_WORD.MEDIUM} value={count("MEDIUM")} icon={<RiskIcon level="MEDIUM" size={18} />} tone="text-medium" />
         <SummaryTile label={RISK_WORD.LOW} value={count("LOW")} icon={<CheckCircle size={18} weight="bold" aria-hidden />} tone="text-low" />
-        <SummaryTile label="Open alerts" value={needs.length} icon={<Bell size={18} weight="bold" aria-hidden />} tone="text-accent" />
+        <SummaryTile label="Open alerts" value={needs.length} icon={<Bell size={18} weight="bold" aria-hidden />} tone="text-accent-ink" />
       </dl>
 
       {shipments.error && (
@@ -91,7 +91,7 @@ export function AttentionQueue() {
             <div className="flex items-center justify-between pb-2">
               <h2 className="text-body font-semibold">Map</h2>
               {selected && (
-                <button type="button" onClick={() => setSelected(null)} className="rounded-sm text-meta font-medium text-accent">
+                <button type="button" onClick={() => setSelected(null)} className="rounded-sm text-meta font-medium text-accent-ink">
                   Show all shipments
                 </button>
               )}
@@ -118,7 +118,7 @@ function SummaryTile({ label, value, icon, tone }: { label: string; value: numbe
         {label}
       </dt>
       <dd className="mt-1">
-        <CountUp value={value} className="font-[family-name:var(--font-display)] text-figure font-semibold text-ink" />
+        <CountUp value={value} className="wide text-[2.75rem] font-[800] leading-none tracking-[-0.03em] text-ink" />
       </dd>
     </div>
   );

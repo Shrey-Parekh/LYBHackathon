@@ -29,21 +29,23 @@ export interface MapMarker {
 
 /** Route styles read the theme's colours at draw time (SVG attributes cannot use CSS variables). */
 function lineStyle(style: RouteStyle): L.PolylineOptions {
-  if (style === "active") return { color: token("--accent"), weight: 5, opacity: 0.95, lineCap: "round", lineJoin: "round" };
+  if (style === "active") return { color: token("--accent-ink"), weight: 5, opacity: 0.95, lineCap: "round", lineJoin: "round" };
   if (style === "alternative") return { color: token("--ink-2"), weight: 4, opacity: 0.8, dashArray: "1 9", lineCap: "round" };
   return { color: token("--ink-2"), weight: 4, opacity: 0.55, dashArray: "10 8" };
 }
 
 function markerIcon(m: MapMarker) {
+  // The truck in focus is marker yellow with an asphalt glyph, like paint on the road.
   const fill = m.stale ? token("--line-strong") : m.emphasis ? token("--accent") : token("--ink-2");
+  const glyph = m.emphasis && !m.stale ? "#1b2230" : token("--raised");
   const ring = m.stale ? "stroke-dasharray:3 2;" : "";
   return L.divIcon({
     className: "",
     iconSize: [28, 28],
     iconAnchor: [14, 14],
     html: `<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-      <circle cx="14" cy="14" r="11" fill="${fill}" stroke="${token("--raised")}" stroke-width="3" style="${ring}"/>
-      <path d="M9 15h6v-4h2l2 3v1h-1M9 15v-4h6" stroke="${token("--raised")}" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+      <circle cx="14" cy="14" r="11" fill="${fill}" stroke="${m.emphasis && !m.stale ? "#1b2230" : token("--raised")}" stroke-width="3" style="${ring}"/>
+      <path d="M9 15h6v-4h2l2 3v1h-1M9 15v-4h6" stroke="${glyph}" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
     </svg>`,
   });
 }

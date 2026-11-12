@@ -19,7 +19,7 @@ export function MyDeliveries() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:py-12">
-      <h1 className="text-figure font-semibold tracking-[-0.02em]">Your deliveries</h1>
+      <h1 className="text-figure font-[750] tracking-[-0.025em]">Your deliveries</h1>
       <p className="mt-1 text-body text-muted">
         {session?.user.name}
         {company ? `, ${company}` : ""}. Times are IST.
@@ -76,7 +76,7 @@ export function MyDeliveries() {
                   </div>
                   <div className="mt-4 flex items-end justify-between gap-4 border-t border-line pt-4">
                     <p className="text-body text-ink">{eta?.headline ?? "No estimate yet."}</p>
-                    <span className="inline-flex shrink-0 items-center gap-1 text-meta font-semibold text-accent">
+                    <span className="inline-flex shrink-0 items-center gap-1 text-meta font-semibold text-accent-ink">
                       Track
                       <ArrowRight size={14} weight="bold" aria-hidden className="transition-transform duration-200 group-hover:translate-x-1" />
                     </span>

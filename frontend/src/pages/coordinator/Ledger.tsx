@@ -14,7 +14,7 @@ export function Ledger() {
   const decisions = useDecisions();
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
-      <h1 className="text-figure font-semibold tracking-tight">Decision ledger</h1>
+      <h1 className="text-figure font-[750] tracking-[-0.025em]">Decision ledger</h1>
       <p className="mt-1 text-body text-muted">Every approved action, what it was predicted to do, and what happened. Times are IST.</p>
       {decisions.error && (
         <div className="mt-4">
@@ -46,7 +46,7 @@ function LedgerCard({ d }: { d: Decision }) {
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-5 py-4">
         <h2 id={`${d.id}-h`} className="text-lead font-semibold">
           {d.id}:{" "}
-          <Link to={`/coordinator/shipments/${d.shipment_id}`} className="text-accent underline-offset-2 hover:underline">
+          <Link to={`/coordinator/shipments/${d.shipment_id}`} className="link">
             {d.shipment_id}
           </Link>
         </h2>
@@ -99,7 +99,7 @@ function LedgerCard({ d }: { d: Decision }) {
                   <tr key={x.id} className="border-t border-line">
                     <th scope="row" className="px-4 py-2 text-left font-normal">
                       {x.label}
-                      {x.id === d.option_id && <span className="ml-2 rounded-sm bg-accent-soft px-1.5 py-0.5 text-meta font-semibold text-accent">Chosen</span>}
+                      {x.id === d.option_id && <span className="ml-2 rounded-sm bg-accent-soft px-1.5 py-0.5 text-meta font-semibold text-accent-ink">Chosen</span>}
                       {x.id === d.option_set!.recommended_option_id && <span className="ml-2 text-meta text-muted">Recommended</span>}
                       {!x.feasible && <span className="block text-meta text-muted">Not available: {x.infeasible_reason}</span>}
                     </th>
@@ -120,7 +120,7 @@ function Figure({ label, value, note, muted, strong }: { label: string; value: s
   return (
     <div className="bg-surface px-5 py-4">
       <p className="text-meta text-muted">{label}</p>
-      <p className={`tnum text-figure font-semibold ${muted ? "text-muted" : strong ? "text-accent" : "text-ink"}`}>{value}</p>
+      <p className={`wide tnum text-figure font-[800] ${muted ? "text-muted" : strong ? "text-accent-ink" : "text-ink"}`}>{value}</p>
       {note && <p className="text-meta text-muted">{note}</p>}
     </div>
   );

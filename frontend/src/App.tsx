@@ -3,6 +3,7 @@ import { RequireRole } from "./components/AppShell";
 import { homeFor, useSession } from "./auth/session";
 import { DEMO_MODE } from "./lib/env";
 import { Login } from "./pages/Login";
+import { Landing } from "./pages/Landing";
 import { AttentionQueue } from "./pages/coordinator/AttentionQueue";
 import { ShipmentDetailPage } from "./pages/coordinator/ShipmentDetail";
 import { Dashboard } from "./pages/coordinator/Dashboard";
@@ -17,6 +18,7 @@ import { DeliveryDetail } from "./pages/customer/DeliveryDetail";
 export function App() {
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/coordinator" element={<RequireRole role="COORDINATOR" />}>
         <Route index element={<AttentionQueue />} />

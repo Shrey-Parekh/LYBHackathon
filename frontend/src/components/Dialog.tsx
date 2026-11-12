@@ -59,7 +59,7 @@ export function Dialog({
         e.preventDefault();
         onClose();
       }}
-      className="ct-dialog m-auto w-[min(560px,calc(100vw-32px))] max-h-[calc(100dvh-32px)] overflow-auto rounded-lg border border-line bg-surface p-0 text-ink backdrop:bg-ink/40"
+      className="ct-dialog m-auto w-[min(560px,calc(100vw-32px))] max-h-[calc(100dvh-32px)] overflow-auto rounded-lg border border-line bg-surface p-0 text-ink backdrop:bg-[rgb(11_15_21/0.55)]"
     >
       {open && (
         <div className="p-6">

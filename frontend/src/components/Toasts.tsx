@@ -53,7 +53,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               transition={{ duration: duration.base, ease: easeOut }}
               className="pointer-events-auto flex w-full items-start gap-3 rounded-lg border border-line-strong bg-surface p-4"
             >
-              <Bell size={18} weight="bold" aria-hidden className="mt-0.5 shrink-0 text-accent" />
+              <Bell size={18} weight="bold" aria-hidden className="mt-0.5 shrink-0 text-accent-ink" />
               <div className="min-w-0 flex-1">
                 <p className="text-body font-semibold text-ink">{t.title}</p>
                 {t.body && <p className="mt-0.5 text-meta text-ink-2">{t.body}</p>}

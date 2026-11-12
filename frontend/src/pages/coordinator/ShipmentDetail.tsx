@@ -46,7 +46,7 @@ export function ShipmentDetailPage() {
       return (
         <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6">
           <EmptyState title={`Shipment ${id} was not found.`}>
-            <Link to="/coordinator" className="text-accent underline">
+            <Link to="/coordinator" className="link">
               Back to the attention queue
             </Link>
           </EmptyState>
@@ -73,7 +73,7 @@ export function ShipmentDetailPage() {
           <ArrowLeft size={14} weight="bold" aria-hidden /> Attention queue
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className="font-mono text-figure font-semibold tracking-[-0.03em]">{s.id}</h1>
+          <h1 className="wide text-figure font-[800] tracking-[-0.03em]">{s.id}</h1>
           {eta && <RiskBadge level={eta.risk_level} size="lg" />}
           <StatusTag status={s.status} />
           <p className="text-body text-ink-2">

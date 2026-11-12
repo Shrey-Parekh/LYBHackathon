@@ -1,50 +1,57 @@
-# Design tokens
+# Design tokens: "Kilometre stone"
 
-Source of truth: `src/index.css` (CSS variables, light and dark). Motion values in seconds: `src/lib/motion.ts`. Theme switching: `src/lib/theme.ts`.
+The product lives on Indian highways, so the look is the road's own. Source of truth: `src/index.css` (CSS variables, light and dark). Motion values in seconds: `src/lib/motion.ts`. Theme switching: `src/lib/theme.ts`. Components use the tokens through Tailwind classes (`bg-accent`, `text-ink`, `text-accent-ink` and so on).
 
 ## Colour
 
-Powder-blue base, pale-white surfaces, one green accent for the primary action, focus and selection. Risk has its own tones (blue "On schedule", amber "At risk", red "Delayed") and always comes with an icon and a word, so the green accent is never read as a risk level. Light is the default (projectors wash out dark themes); dark is a toggle.
-
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| canvas | `#D3E4F1` powder blue | `#0F1C28` | Page background, with a soft fixed daylight glow |
-| surface / raised | `#FBFCFA` pale white / `#FFFFFF` | `#152535` / `#1A2D40` | Panels, inputs |
-| sunken | `#E6EFF6` | `#1B3045` | Tracks, skeletons, disabled |
-| line / line-strong | `#C4D6E4` / `#9DB6CA` | `#24394D` / `#3A5570` | Borders |
-| ink / ink-2 / muted | `#14263A` / `#2B4258` / `#4B6074` | `#E3EDF5` / `#C2D3E2` / `#93A8BB` | Text |
-| accent | `#17794A` green (soft `#DCF0E3`) | `#6FD19A` (soft `#15372A`) | Primary action, focus ring, selection, routes |
-| rail | `#13283C` navy | `#0A1520` | Coordinator navigation, login panel, headline impact tile |
-| low | `#24577C` on `#DBE8F3` | `#9CC6E8` on `#16324A` | On schedule |
-| medium | `#7A4C00` on `#F6E7C6` | `#E3B66A` on `#3A2E15` | At risk |
-| high | `#9A3228` on `#F6DCD7` | `#F0A096` on `#3D201C` | Delayed |
+| `--canvas` (concrete) | `#e9ecee` | `#12161e` | Page background |
+| `--surface` / `--raised` | `#fbfcfc` / `#ffffff` | `#1a202b` / `#202836` | Panels, inputs |
+| `--ink` (asphalt) | `#1b2230` | `#edf0f4` | Text |
+| `--muted` | `#555f6e` | `#9aa5b5` | Secondary text |
+| `--accent` (marker yellow) | `#ffc531` | `#ffc531` | Primary buttons, selection, the truck in focus. Always a fill under asphalt text, never text on a light surface |
+| `--accent-ink` (sign blue) | `#1446a0` | `#8fb4ff` | Links, chart bars, the active route on the map |
+| `--rail` | `#1b2230` | `#0e1219` | Coordinator side rail, landing story section |
+| `--low` (go) | `#1f6b57` | `#7fd3b7` | "On schedule" |
+| `--medium` (caution) | `#9c4500` | `#ffb37a` | "At risk" |
+| `--high` (stop) | `#b3261e` | `#ff9b92` | "Delayed" |
+
+Risk is always an icon plus a word, so colour never carries meaning alone. Caution orange is darker and redder than marker yellow.
 
 ## Contrast (WCAG ratio, computed)
 
-| Pair | Light | Dark |
-|---|---|---|
-| ink on canvas / surface | 11.80 / 14.92 | 14.54 |
-| muted on surface / canvas / sunken | 6.33 / 5.00 / 5.60 | 6.35 |
-| accent on surface | 5.27 | 8.36 |
-| on-accent on accent | 5.43 | 9.14 |
-| low / medium / high on their soft | 6.17 / 6.00 / 5.64 | 7.33 / 7.06 / 7.16 |
-| rail text / muted / accent on rail | 11.60 / 6.32 / 8.63 | |
+| Pair | Ratio |
+|---|---|
+| Ink on canvas (light / dark) | 13.4 / 15.8 |
+| Muted on surface (light / dark) | 6.3 / 6.6 |
+| Asphalt on marker yellow | 10.1 |
+| Sign blue on surface (light / dark) | 8.5 / 7.9 |
+| Go, caution, stop on their soft fills (light) | 5.3, 5.3, 5.1 |
+| Go, caution, stop on their soft fills (dark) | 7.6, 8.1, 7.1 |
+| Rail text, rail muted on rail | 11.4, 6.2 |
+
+Focus ring: 2 px asphalt outline with a 5 px marker-yellow halo, visible on concrete, white and yellow.
 
 ## Type
 
-Bricolage Grotesque (variable) for headings and headline figures; Figtree (variable) for body and interface text; JetBrains Mono for shipment IDs and the replay clock. Tabular figures (`.tnum`) on every time, duration and distance.
+One family, Archivo (variable weight and width), self-hosted through `@fontsource-variable/archivo`.
 
-| Token | Size / line height | Use |
-|---|---|---|
-| meta | 13 / 20 | Labels, captions |
-| body | 15 / 24 | Default |
-| lead | 17 / 26 | Headlines, emphasised lines |
-| heading | 21 / 28 | Section titles, queue ETAs |
-| figure | 30 / 36 | ETA, page titles |
-| driver | 44 / 48 | Driver figures and main button |
+| Role | Setting |
+|---|---|
+| Body | Archivo, normal width, 15 px / 24 px |
+| Headings | Width 112%, weight 600-750 |
+| Signage numbers (clock, KPIs, ETA) | `.wide` (width 125%), weight 800, tabular figures (`.tnum`) |
+| Landing headline | `text-hero` (clamp 2.6-5.4 rem), width 125% on screens 640 px and up, 100% on phones |
 
 ## Shape, space, motion
 
-- Radius rule: badges 6 px, controls 10 px, panels 16 px. Journey bar and factor bar are fully rounded tracks.
-- Effects: panels sit on a blue-tinted soft shadow and lift on hover when clickable; primary buttons have an inner highlight and a green glow on hover; a fixed daylight glow and fine grain sit on the page (both fixed layers, never repainted on scroll). Summary and impact numbers count up.
-- Motion: 150 / 220 / 300 ms, ease-out `cubic-bezier(0.22, 1, 0.36, 1)`; nothing bounces or loops. Animated: page fade-in, sliding rail indicator, queue rows re-ordering, value cross-fades, factor bar growing in, journey marker gliding, option rows staggering, toasts, theme icon. Transforms switch off under `prefers-reduced-motion`; fades remain.
+- Radius: badges 4 px, controls 8 px, panels 14 px. Road graphics are pill-shaped.
+- Interface motion stays within 150-300 ms with an ease-out curve.
+- The landing page has one orchestrated moment: the hero road drives in on load, then scrolling replays the worked example from DESIGN.md 6.6.
+- Lane markings flow (`.lane-flow`) and reported incidents pulse (`.pulse-ring`). Both stop under `prefers-reduced-motion`, and `MotionConfig reducedMotion="user"` turns off transforms app-wide.
+
+## Navigation
+
+- `Ctrl K` (`⌘K` on a Mac) opens the command palette on every signed-in screen: pages for the role, every visible shipment with its risk and ETA, theme and sign-out.
+- The public landing page is `/`; signed-in users go straight to their home.

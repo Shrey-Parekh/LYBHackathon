@@ -40,7 +40,7 @@ export function EtaPanel({
           </p>
           <CrossFade value={snapshot.eta} className="mt-0.5">
             {(eta) => (
-              <span className="tnum text-figure font-semibold text-ink">
+              <span className="wide tnum text-[2.5rem] font-[800] leading-none tracking-[-0.03em] text-ink">
                 {clock(eta)} <span className="text-lead font-medium text-muted">IST</span>
               </span>
             )}

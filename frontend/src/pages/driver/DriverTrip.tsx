@@ -170,7 +170,7 @@ function RouteChangeBanner({ s, routes }: { s: ShipmentDetail; routes: ReturnTyp
       className={`rounded-lg border-2 p-4 ${unread ? "border-accent bg-accent-soft" : "border-line bg-surface"}`}
     >
       <div className="flex items-start gap-3">
-        <ArrowsSplit size={28} weight="bold" aria-hidden className="mt-0.5 shrink-0 text-accent" />
+        <ArrowsSplit size={28} weight="bold" aria-hidden className="mt-0.5 shrink-0 text-accent-ink" />
         <div className="min-w-0 flex-1">
           {rerouted ? (
             <p className="text-lead font-semibold text-ink">

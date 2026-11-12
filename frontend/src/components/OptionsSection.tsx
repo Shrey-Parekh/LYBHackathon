@@ -104,7 +104,7 @@ export function OptionsSection({ shipment }: { shipment: ShipmentDetail }) {
       )}
       {recommended?.type === "RESCHEDULE" && (recommended.projected_late_min ?? 0) > 0 && (
         <p className="flex items-start gap-2 border-b border-line px-5 py-3 text-body text-ink">
-          <Info size={18} weight="bold" aria-hidden className="mt-0.5 shrink-0 text-accent" />
+          <Info size={18} weight="bold" aria-hidden className="mt-0.5 shrink-0 text-accent-ink" />
           {RESCHEDULE_ONLY}
         </p>
       )}

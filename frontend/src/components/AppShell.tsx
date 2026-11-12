@@ -12,6 +12,7 @@ import { duration, easeOut, fadeIn } from "../lib/motion";
 import { setTheme, useTheme } from "../lib/theme";
 import { clock } from "../lib/time";
 import { NotificationBell } from "./NotificationBell";
+import { CommandPalette, PaletteTrigger, useCommandPalette } from "./CommandPalette";
 
 export const FICTIONAL_NOTICE = "Fictional demo data. Plant X is a fictional company.";
 
@@ -72,9 +73,11 @@ function CoordinatorShell() {
   const qc = useQueryClient();
   useLiveUpdates(qc, session.token);
   const signOut = useSignOut();
+  const palette = useCommandPalette();
 
   return (
     <div className="min-h-dvh md:grid md:grid-cols-[236px_1fr]">
+      <CommandPalette open={palette.open} onClose={() => palette.setOpen(false)} />
       <SkipLink />
       {/* Rail (desktop) */}
       <aside className="sticky top-0 hidden h-dvh flex-col bg-rail text-rail-ink md:flex">
@@ -152,7 +155,8 @@ function CoordinatorShell() {
 
         {/* Status bar: replay clock, live status, notifications */}
         <div className="sticky top-0 z-[800] flex h-14 items-center justify-end gap-2 border-b border-line bg-canvas/90 px-4 backdrop-blur-sm sm:px-6">
-          {DEMO_MODE && <ReplayClock />}
+          <PaletteTrigger onOpen={() => palette.setOpen(true)} />
+          {DEMO_MODE ? <ReplayClock /> : <span className="mr-auto" />}
           <StreamIndicator />
           <NotificationBell />
         </div>
@@ -170,7 +174,7 @@ function ReplayClock() {
   const running = data.scenario_status === "RUNNING";
   return (
     <NavLink to="/coordinator/demo" className="mr-auto inline-flex items-center gap-2 rounded-md border border-line bg-surface px-3 py-1.5 text-meta hover:border-line-strong" aria-label={`Replay clock ${clock(data.clock)} IST, ${data.scenario_status.toLowerCase().replace(/_/g, " ")}`}>
-      <ClockCountdown size={16} weight="bold" aria-hidden className={running ? "text-accent" : "text-muted"} />
+      <ClockCountdown size={16} weight="bold" aria-hidden className={running ? "text-accent-ink" : "text-muted"} />
       <span className="tnum font-mono text-body font-semibold text-ink">{clock(data.clock)}</span>
       <span className="text-muted">IST</span>
       <span className="hidden text-muted sm:inline">{running ? `Replay at ${data.speed}x` : data.scenario_status === "IDLE" ? "Replay not started" : "Replay paused"}</span>
@@ -186,8 +190,10 @@ function SimpleShell({ role }: { role: Role }) {
   useLiveUpdates(qc, session.token);
   const signOut = useSignOut();
   const narrow = role === "DRIVER";
+  const palette = useCommandPalette();
   return (
     <div className="flex min-h-dvh flex-col">
+      <CommandPalette open={palette.open} onClose={() => palette.setOpen(false)} />
       <SkipLink />
       <header className="sticky top-0 z-[800] border-b border-line bg-canvas/90 backdrop-blur-sm">
         <div className={`mx-auto flex h-14 items-center gap-2 px-4 ${narrow ? "max-w-xl" : "max-w-4xl sm:px-6"}`}>
@@ -197,6 +203,7 @@ function SimpleShell({ role }: { role: Role }) {
           </NavLink>
           <span className="rounded-sm bg-sunken px-2 py-0.5 text-meta font-medium text-ink-2">{role === "DRIVER" ? "Driver" : "Customer"}</span>
           <div className="ml-auto flex items-center gap-1">
+            {!narrow && <PaletteTrigger onOpen={() => palette.setOpen(true)} />}
             <StreamIndicator />
             <NotificationBell />
             {!narrow && <span className="hidden px-2 text-meta text-muted lg:inline">{session.user.name}</span>}
@@ -269,14 +276,14 @@ function StreamIndicator() {
   );
 }
 
-/** Product mark: a flat cobalt tile with a route line, drawn once in the brand colour. */
+/** Product mark: an Indian kilometre stone (white body, yellow cap) with a lane dash. Reads on light and dark. */
 export function Mark({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-      <rect width="32" height="32" rx="8" fill="#17794a" />
-      <path d="M7 22c4 0 5-6 9-6s5-6 9-6" stroke="#ffffff" strokeWidth="2.6" fill="none" strokeLinecap="round" />
-      <circle cx="7" cy="22" r="2.4" fill="#ffffff" />
-      <circle cx="25" cy="10" r="2.4" fill="#bfe0f4" />
+      <path d="M5 30.5V14.5a11 11 0 0 1 22 0v16z" fill="#fbfcfc" stroke="#1b2230" strokeWidth="1.6" />
+      <path d="M5.8 14.5a10.2 10.2 0 0 1 20.4 0z" fill="#ffc531" />
+      <path d="M5 14.5h22" stroke="#1b2230" strokeWidth="1.6" />
+      <path d="M10.5 22.5h4M17.5 22.5h4" stroke="#1b2230" strokeWidth="2.6" strokeLinecap="round" />
     </svg>
   );
 }
