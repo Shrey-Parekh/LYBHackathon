@@ -28,10 +28,10 @@ export interface TestApp extends Built {
   advanceTo(iso: string): void;
 }
 
-const fixtures = loadFixtures(STUB_FIXTURES_DIR);
-
-export async function makeApp(over: Partial<AppConfig> = {}): Promise<TestApp> {
-  const built = await buildApp({ config: testConfig(over), fixturesDir: STUB_FIXTURES_DIR, autoTick: false });
+/** An app on the stub fixtures by default; pass database/seed (REAL_FIXTURES_DIR) to run on the real seed. */
+export async function makeApp(over: Partial<AppConfig> = {}, fixturesDir: string = STUB_FIXTURES_DIR): Promise<TestApp> {
+  const fixtures = loadFixtures(fixturesDir);
+  const built = await buildApp({ config: testConfig(over), fixturesDir, autoTick: false });
   const tokens = new Map<string, string>();
   const req: TestApp['req'] = async (method, url, token, body) => {
     const res = await built.app.inject({
