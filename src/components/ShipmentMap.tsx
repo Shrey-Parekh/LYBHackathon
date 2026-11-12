@@ -28,8 +28,8 @@ export interface MapMarker {
 
 const LINE: Record<RouteStyle, L.PolylineOptions> = {
   active: { color: "#14181d", weight: 4, opacity: 0.85 },
-  alternative: { color: "#535b64", weight: 3, opacity: 0.8, dashArray: "2 8", lineCap: "round" },
-  previous: { color: "#535b64", weight: 3, opacity: 0.45, dashArray: "8 8" },
+  alternative: { color: "#353c44", weight: 4, opacity: 0.85, dashArray: "1 9", lineCap: "round" },
+  previous: { color: "#353c44", weight: 4, opacity: 0.6, dashArray: "10 8" },
 };
 
 function markerIcon(m: MapMarker) {

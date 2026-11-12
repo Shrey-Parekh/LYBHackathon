@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useLocation, useParams } from "react-router";
 import { ArrowLeft } from "@phosphor-icons/react";
 import { useEtaHistory, useShipment } from "../../api/queries";
 import { useRoutes } from "../../api/useShipmentRoutes";
@@ -20,6 +20,16 @@ export function ShipmentDetailPage() {
   const s = shipment.data;
   const routes = useRoutes([s?.active_route_id, s?.planned_route_id]);
   const optionsRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
+  // Arriving from "Review options" in the queue (#options): bring the options into view once loaded.
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (s && location.hash === "#options" && !scrolled.current) {
+      scrolled.current = true;
+      requestAnimationFrame(() => optionsRef.current?.scrollIntoView({ block: "start" }));
+    }
+  }, [s, location.hash]);
 
   // Draw the new route in only when the reroute happens while this page is open.
   const firstRoute = useRef<string | null>(null);
