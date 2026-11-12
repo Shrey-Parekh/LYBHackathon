@@ -1,0 +1,3 @@
+# The seed is compared byte for byte with a fresh generator run; keep LF everywhere.
+seed/*.json text eol=lf
+sources/*.json text eol=lf
