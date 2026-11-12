@@ -50,6 +50,7 @@ function summary(s: ShipmentDetail): ShipmentSummary {
     id: s.id, order_id: s.order.id, customer_name: s.customer_name, destination_name: s.destination_name, transporter_name: s.transporter_name,
     status: s.status, active_route_id: s.active_route_id, last_position: s.last_position, current_eta: s.current_eta,
     open_alert: s.open_alert, version: s.version,
+    arrived_at: s.milestones.find((m) => m.status === "ARRIVED")?.at ?? null, original_promised_by: s.order.original_promised_by,
   };
 }
 
