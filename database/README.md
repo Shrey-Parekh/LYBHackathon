@@ -68,6 +68,7 @@ These choices make the replay reproduce DESIGN.md 6.6 to the minute. Each one is
 | 3 | Accident at km 75 (Induri) from 09:20, cleared at 11:00 | Staying on RTE-01 the truck waits, then drives at baseline with the 15-min checkpoint dwell: arrives 12:40. That is 75 min worse than the plan from 09:30; the driver estimated 60 |
 | 4 | RTE-01B baseline 50 km/h, but 30 km/h through Wagholi (km 126 to 131) in the ground truth | Rerouted arrival 11:43 against the projected 11:39: a visible 4-minute ETA error in the ledger |
 | 5 | The reroute only holds if approved before 09:39 (km 66) | The 09:30 pause waits for the presenter |
+| 5b | A driver's report without a location (the three-tap flow) is placed `report_ahead_km` = 15 km ahead for accidents, road closures and weather | Reported at km 60, the accident sits at km 75, after the km 66 exit, so the bypass can avoid it. Breakdowns, loading delays and other problems stay at the truck |
 | 6 | SHP-1002: 24 t on VEH-K1 (tare 10 t) = 34 t gross; RTE-02B limited to 20 t | Reroute is infeasible for the weight reason |
 | 7 | SHP-1002 departs 08:35 | The backend seeds the 15 minutes of positions before the 08:50 clock start; they must all fall after departure. The truck passes the km 46 exit at 09:44, so weight is the only reason the reroute fails |
 | 8 | SHP-1002 driver report scripted at 09:20: WEATHER, 60 min, km 115 (foot of Kasara ghat) | HIGH with an open alert from 09:20 to 09:35. No option improves arrival by 10 min, so RESCHEDULE is recommended. Scripted because nobody drives SHP-1002 in the demo |

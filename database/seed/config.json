@@ -50,5 +50,8 @@
     "speed": 60,
     "position_interval_min": 5,
     "stale_tick_min": 5
+  },
+  "disruptions": {
+    "report_ahead_km": 15
   }
 }

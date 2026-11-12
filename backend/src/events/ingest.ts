@@ -194,11 +194,12 @@ function applyEvent(ctx: Ctx, s: ShipmentRow, ev: EventRequest, at: string, now:
       if (exists) return { status: 'DUPLICATE' };
       const p = ev.payload;
       const fallback = ctx.fixtures.config.category_default_delay_min[p.category] ?? 30;
+      const atKm = p.at_km ?? reportedAheadKm(ctx, s, p.category);
       db.prepare(
         `INSERT INTO disruptions (id, shipment_id, route_id, category, at_km, expected_delay_min, estimate_source, note, reported_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
-        p.disruption_id, s.id, s.active_route_id, p.category, p.at_km ?? null, p.expected_delay_min ?? fallback,
+        p.disruption_id, s.id, s.active_route_id, p.category, atKm, p.expected_delay_min ?? fallback,
         p.expected_delay_min ? 'DRIVER' : 'DEFAULT', p.note ?? null, at,
       );
       bump(ctx, s.id, true);
@@ -224,4 +225,16 @@ function resolveOpenAlert(ctx: Ctx, shipmentId: string, now: string) {
   if (!a) return;
   ctx.db.prepare(`UPDATE alerts SET status = 'RESOLVED', resolved_at = ? WHERE id = ?`).run(now, a.id);
   audit(ctx.db, now, null, 'ALERT_RESOLVED', 'alert', a.id, { shipment_id: shipmentId, level: a.level, reason: 'shipment arrived' });
+}
+
+/** Road problems a driver reports from the cab are ahead of the truck. The three-tap report carries no
+ * location, so an ACCIDENT, ROAD_CLOSURE or WEATHER report on a moving truck is placed a configured
+ * distance ahead (config.disruptions.report_ahead_km, 15 km in the seed). Other categories stay at the truck. */
+const ROAD_AHEAD_CATEGORIES = new Set(['ACCIDENT', 'ROAD_CLOSURE', 'WEATHER']);
+function reportedAheadKm(ctx: Ctx, s: { status: string; active_route_id: string; last_progress_km: number | null }, category: string): number | null {
+  if (s.status !== 'IN_TRANSIT' || s.last_progress_km === null || !ROAD_AHEAD_CATEGORIES.has(category)) return null;
+  const route = getRoute(ctx.db, s.active_route_id);
+  if (!route) return null;
+  const ahead = ctx.fixtures.config.disruptions?.report_ahead_km ?? 15;
+  return Math.min(Math.round((s.last_progress_km + ahead) * 1000) / 1000, route.total_km);
 }

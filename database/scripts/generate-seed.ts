@@ -53,6 +53,8 @@ function buildConfig() {
     },
     impact: { cost_per_late_hour_inr: 1500 },
     demo: { speed: 60, position_interval_min: 5, stale_tick_min: 5 },
+    // The driver's three-tap report has no location: road problems are placed this far ahead of the truck.
+    disruptions: { report_ahead_km: 15 },
   };
 }
 

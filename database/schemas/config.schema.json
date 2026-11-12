@@ -3,7 +3,7 @@
   "$id": "config.schema.json",
   "title": "config.json: thresholds and defaults from DESIGN.md sections 6.3 to 6.7",
   "$ref": "common.schema.json#/$defs/file",
-  "required": ["fictional_assumptions", "eta", "category_default_delay_min", "alerts", "options", "impact", "demo"],
+  "required": ["fictional_assumptions", "eta", "category_default_delay_min", "alerts", "options", "impact", "demo", "disruptions"],
   "properties": {
     "fictional_assumptions": {"type": "array", "items": {"type": "string"}, "minItems": 1},
     "eta": {
@@ -65,6 +65,12 @@
       "additionalProperties": false,
       "required": ["cost_per_late_hour_inr"],
       "properties": {"cost_per_late_hour_inr": {"type": "number", "exclusiveMinimum": 0}}
+    },
+    "disruptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["report_ahead_km"],
+      "properties": {"report_ahead_km": {"type": "number", "exclusiveMinimum": 0}}
     },
     "demo": {
       "type": "object",
