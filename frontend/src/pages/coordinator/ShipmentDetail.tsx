@@ -7,7 +7,9 @@ import { ApiError } from "../../api/client";
 import { Card, CardHeader, EmptyState, ErrorNote, KeyValue, Loading, Skeleton, StatusTag, RiskBadge } from "../../components/ui";
 import { EtaPanel } from "../../components/EtaPanel";
 import { EtaHistory } from "../../components/EtaHistory";
-import { ShipmentMap } from "../../components/ShipmentMap";
+import { ShipmentRoadMap } from "../../components/ShipmentRoadMap";
+import { LiveTrafficPanel } from "../../components/LiveTrafficPanel";
+import { WeatherPanel } from "../../components/WeatherPanel";
 import { AlertBanner, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
 import { OptionsSection } from "../../components/OptionsSection";
 import { clockTz } from "../../lib/time";
@@ -95,15 +97,18 @@ export function ShipmentDetailPage() {
               <MapLegend rerouted={s.active_route_id !== s.planned_route_id} />
             </CardHeader>
             <div className="p-4">
-              <ShipmentMap
+              <ShipmentRoadMap
+                shipment={s}
                 label={`Map of ${s.id}. ${positionText(s, routes[s.active_route_id])}`}
                 routes={layers.routes}
                 markers={layers.marker ? [layers.marker] : []}
+                traffic={s.live_traffic}
                 focusRouteIds={[s.planned_route_id, s.active_route_id]}
               />
               <p className="tnum mt-3 text-body text-ink-2">
                 <span className="font-medium text-ink">Position:</span> {positionText(s, routes[s.active_route_id])}
               </p>
+              {s.live_traffic && <div className="mt-3"><LiveTrafficPanel traffic={s.live_traffic} refreshShipmentId={s.status === "IN_TRANSIT" ? s.id : undefined} /></div>}
             </div>
           </Card>
 
@@ -115,6 +120,7 @@ export function ShipmentDetailPage() {
               </div>
             </div>
           </Card>
+          {s.live_traffic && s.status === "IN_TRANSIT" && <WeatherPanel routeId={s.active_route_id} />}
         </div>
 
         <div className="space-y-5 lg:col-span-5">

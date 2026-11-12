@@ -2,6 +2,7 @@
 // On-time is always measured against orders.original_promised_by, never the rescheduled time.
 // Shipments are grouped by their planned route (the lane), so a rerouted truck stays in its lane's figures.
 import type { Ctx } from '../ctx';
+import { LIVE_SHIPMENT_PREFIX } from '../liveRouting/scenarios';
 import { minutesBetween } from '../time';
 
 type GroupBy = 'route' | 'transporter';
@@ -21,10 +22,10 @@ export function onTime(ctx: Ctx, groupBy: GroupBy) {
               COUNT(*) AS arrived,
               SUM(CASE WHEN s.arrived_at <= o.original_promised_by THEN 1 ELSE 0 END) AS on_time
        FROM shipments s JOIN orders o ON o.id = s.order_id ${g.join}
-       WHERE s.arrived_at IS NOT NULL
+       WHERE s.arrived_at IS NOT NULL AND s.id NOT LIKE ?
        GROUP BY ${g.id} ORDER BY ${g.id}`,
     )
-    .all() as { group_id: string; group_name: string; arrived: number; on_time: number }[];
+    .all(`${LIVE_SHIPMENT_PREFIX}%`) as { group_id: string; group_name: string; arrived: number; on_time: number }[];
   // One row per group; delivered counts arrivals, on time is against the original promise.
   return rows.map((r) => ({
     group_id: r.group_id,
@@ -77,9 +78,9 @@ export function impact(ctx: Ctx) {
   const live = db
     .prepare(
       `SELECT s.id, s.arrived_at, o.original_promised_by FROM shipments s JOIN orders o ON o.id = s.order_id
-       WHERE EXISTS (SELECT 1 FROM eta_snapshots e WHERE e.shipment_id = s.id) ORDER BY s.id`,
+       WHERE s.id NOT LIKE ? AND EXISTS (SELECT 1 FROM eta_snapshots e WHERE e.shipment_id = s.id) ORDER BY s.id`,
     )
-    .all() as { id: string; arrived_at: string | null; original_promised_by: string }[];
+    .all(`${LIVE_SHIPMENT_PREFIX}%`) as { id: string; arrived_at: string | null; original_promised_by: string }[];
   const firstAlert = (id: string) =>
     db.prepare('SELECT a.*, e.eta AS first_eta FROM alerts a JOIN eta_snapshots e ON e.id = a.first_snapshot_id WHERE a.shipment_id = ? ORDER BY a.opened_at, a.id LIMIT 1').get(id) as
       | { opened_at: string; first_eta: string }

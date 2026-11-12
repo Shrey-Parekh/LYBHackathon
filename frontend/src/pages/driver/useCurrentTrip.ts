@@ -3,10 +3,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useShipment, useShipments } from "../../api/queries";
 import { getOutbox, onOutboxSent, useOutbox } from "../../api/outbox";
 
-/** The driver's current trip: the first assigned shipment that is not delivered or cancelled. */
+/** Show the moving or arrived trip ahead of future assignments. */
 export function useCurrentTrip() {
   const list = useShipments();
-  const currentId = list.data?.find((s) => s.status !== "DELIVERED" && s.status !== "CANCELLED")?.id;
+  const moving = list.data?.filter((s) => s.status === "IN_TRANSIT" || s.status === "ARRIVED");
+  const current = moving?.find((s) => s.live_demo) ?? moving?.[0]
+    ?? list.data?.find((s) => s.status === "PLANNED" || s.status === "DISPATCHED");
+  const currentId = current?.id;
   const detail = useShipment(currentId);
   return { list, detail, currentId };
 }

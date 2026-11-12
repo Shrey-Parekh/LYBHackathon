@@ -3,12 +3,13 @@
 import { audit } from '../audit';
 import type { AlertRow } from '../alerts/alerts';
 import type { AuthUser } from '../auth/policy';
-import type { Ctx } from '../ctx';
+import { shipmentNow, type Ctx } from '../ctx';
 import { nextId } from '../db/db';
 import { ApiError, notFound, validationFailed } from '../http/errors';
 import type { Option } from '../http/schemas';
 import { customerUserIds } from '../notify/notifier';
 import { isStale, type OptionSetRow } from '../options/service';
+import { rerouteReason } from '../options/evaluate';
 import { recomputeEta } from '../shipments/recompute';
 import { getRoute, getShipment, type ShipmentRow } from '../shipments/repo';
 import { stableUuid } from '../sim/ids';
@@ -26,7 +27,7 @@ const conflict = (code: string, message: string) => new ApiError(409, code, mess
 
 export function decide(ctx: Ctx, user: AuthUser, shipmentId: string, input: DecisionInput): { status: 200 | 201; body: unknown } {
   const { db } = ctx;
-  const now = ctx.clock.nowIso();
+  const now = shipmentNow(ctx, shipmentId);
   const hints: PendingHint[] = [];
 
   const result = db.transaction(() => {
@@ -133,10 +134,15 @@ function apply(ctx: Ctx, s: ShipmentRow, option: Option, now: string, hints: Pen
   switch (option.type) {
     case 'REROUTE': {
       const altId = String(option.params!.alt_route_id);
-      const exit = db.prepare('SELECT exit_km FROM route_alternatives WHERE route_id = ? AND alt_route_id = ?').get(s.active_route_id, altId) as {
-        exit_km: number;
-      };
-      const alt = getRoute(db, altId)!;
+      const exit = db.prepare('SELECT exit_km FROM route_alternatives WHERE route_id = ? AND alt_route_id = ?').get(s.active_route_id, altId) as { exit_km: number } | undefined;
+      const alt = getRoute(db, altId);
+      if (!exit || !alt) throw conflict('OPTIONS_STALE', 'This alternative route is no longer available');
+      const reason = rerouteReason(s.status, s.last_progress_km, s.gross_t, { ...exit, alt_route_id: altId, max_gross_t: alt.max_gross_t, closed: alt.closed === 1 });
+      if (reason) throw conflict('OPTIONS_STALE', reason);
+      const live = ctx.liveRouteDemo;
+      if (live?.isLiveShipment(s.id) && (!live.drive(s.active_route_id, s.last_progress_km) || !live.drive(altId, s.last_progress_km))) {
+        throw conflict('OPTIONS_STALE', 'Refresh live traffic before approving the reroute');
+      }
       db.prepare(
         `UPDATE shipments SET active_route_id = ?, diverted_from_route_id = ?, diverted_at_km = ?,
            version = version + 1, plan_version = plan_version + 1 WHERE id = ?`,

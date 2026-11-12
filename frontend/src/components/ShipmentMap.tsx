@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
-import type { RouteDetail } from "../api/contract";
+import type { LiveTraffic, RoadConditions, RouteDetail } from "../api/contract";
 import { prefersReducedMotion } from "../lib/motion";
 import { token, useTheme } from "../lib/theme";
 
@@ -26,6 +26,13 @@ export interface MapMarker {
   stale?: boolean;
   emphasis?: boolean;
 }
+
+export const FLOW_STYLE = {
+  FLOWING: { label: "Flowing", tone: "--low" },
+  SLOW: { label: "Slow", tone: "--medium" },
+  HEAVY: { label: "Heavy", tone: "--high" },
+  CLOSED: { label: "Closed", tone: "--ink" },
+};
 
 /** Route styles read the theme's colours at draw time (SVG attributes cannot use CSS variables). */
 function lineStyle(style: RouteStyle): L.PolylineOptions {
@@ -53,12 +60,16 @@ function markerIcon(m: MapMarker) {
 export function ShipmentMap({
   routes,
   markers,
+  traffic,
+  roadConditions,
   focusRouteIds,
   label,
   className = "h-[420px]",
 }: {
   routes: MapRoute[];
   markers: MapMarker[];
+  traffic?: LiveTraffic;
+  roadConditions?: RoadConditions;
   /** Fit the view to these routes when they change. */
   focusRouteIds?: string[];
   label: string;
@@ -93,6 +104,7 @@ export function ShipmentMap({
       })
       .addTo(m);
     routeLayer.current = L.layerGroup().addTo(m);
+    m.createPane("road-conditions").style.zIndex = "415";
     map.current = m;
     const markersMap = markerRefs.current;
     return () => {
@@ -127,8 +139,34 @@ export function ShipmentMap({
         }
       }
     }
+    for (const section of traffic?.sections ?? []) {
+      const points = section.coordinates.map(([lng, lat]) => L.latLng(lat, lng));
+      L.polyline(points, { color: token("--medium"), weight: 7, opacity: 0.9, dashArray: "8 4", interactive: false }).addTo(layer);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeKey]);
+  }, [routeKey, traffic?.sections]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !roadConditions) return;
+    const layer = L.layerGroup().addTo(m);
+    for (const segment of roadConditions.flow) {
+      L.polyline(segment.coordinates.map(([lng, lat]) => L.latLng(lat, lng)), {
+        pane: "road-conditions", className: "ct-road-flow", color: token(FLOW_STYLE[segment.condition].tone), weight: 7,
+        dashArray: segment.condition === "CLOSED" ? "5 4" : undefined, interactive: false,
+      }).addTo(layer);
+    }
+    for (const incident of roadConditions.incidents) {
+      const [lng, lat] = incident.location;
+      const tooltip = document.createElement("span");
+      tooltip.textContent = incident.category;
+      L.circleMarker([lat, lng], { pane: "road-conditions", className: "ct-road-incident", radius: 7,
+        color: token("--surface"), fillColor: token("--high"), fillOpacity: 1, weight: 2,
+      }).bindTooltip(tooltip).addTo(layer);
+    }
+    m.attributionControl.addAttribution("Traffic &copy; TomTom");
+    return () => { layer.remove(); m.attributionControl.removeAttribution("Traffic &copy; TomTom"); };
+  }, [roadConditions, theme]);
 
   // Fit to the focused routes when the focus changes (not on every position update).
   const focusKey = (focusRouteIds ?? routes.map((r) => r.route.id)).join(",");

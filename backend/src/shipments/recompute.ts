@@ -7,7 +7,16 @@ import { computeEta } from '../eta/computeEta';
 import type { EtaTrigger } from '../eta/types';
 import { evaluateAlerts } from '../alerts/alerts';
 import type { PendingHint } from '../stream/hub';
-import { buildEtaState, getShipment, getSnapshot } from './repo';
+import { buildEtaState, getShipment, getSnapshot, type ShipmentRow } from './repo';
+
+export function etaStateFor(ctx: Ctx, s: ShipmentRow, now: string) {
+  const w = ctx.config.demoMode ? undefined : ctx.weather.forRoute(s.active_route_id);
+  const forecast = w && w.worst && w.suggested_delay_min > 0 ? { minutes: w.suggested_delay_min, at_km: w.worst.km, reasons: w.worst.reasons } : null;
+  const state = buildEtaState(ctx.db, s, now, ctx.fixtures.config.eta, forecast);
+  const live = ctx.liveRouteDemo;
+  if (live?.isLiveShipment(s.id)) state.liveRouting = { drive: live.drive(s.active_route_id, s.last_progress_km) };
+  return state;
+}
 
 /** Returns the new snapshot id, or null when the shipment has arrived (the last snapshot stands). */
 export function recomputeEta(
@@ -23,10 +32,7 @@ export function recomputeEta(
   if (s.status === 'ARRIVED' || s.status === 'DELIVERED' || s.status === 'CANCELLED') return null;
   const cfg = ctx.fixtures.config.eta;
   const prev = getSnapshot(db, s.current_eta_snapshot_id);
-  // Live mode only: forecast weather on the active route feeds the ETA. Demo mode stays scripted.
-  const w = ctx.config.demoMode ? undefined : ctx.weather.forRoute(s.active_route_id);
-  const forecast = w && w.worst && w.suggested_delay_min > 0 ? { minutes: w.suggested_delay_min, at_km: w.worst.km, reasons: w.worst.reasons } : null;
-  const res = computeEta(buildEtaState(db, s, now, cfg, forecast), now, cfg, trigger);
+  const res = computeEta(etaStateFor(ctx, s, now), now, cfg, trigger);
 
   const seq = nextSeq(db, 'ETA');
   const id = `ETA-${String(seq).padStart(6, '0')}`;

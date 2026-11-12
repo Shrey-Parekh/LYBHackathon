@@ -5,7 +5,8 @@ import { useRoutes } from "../../api/useShipmentRoutes";
 import { ApiError } from "../../api/client";
 import { Card, CardHeader, EmptyState, ErrorNote, KeyValue, Loading, Skeleton, StatusTag } from "../../components/ui";
 import { EtaPanel } from "../../components/EtaPanel";
-import { ShipmentMap } from "../../components/ShipmentMap";
+import { ShipmentRoadMap } from "../../components/ShipmentRoadMap";
+import { LiveTrafficPanel } from "../../components/LiveTrafficPanel";
 import { JourneyBar, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
 import { clockTz, dateTimeTz } from "../../lib/time";
 
@@ -82,16 +83,19 @@ export function DeliveryDetail() {
           <div className="mb-4 px-1">
             <JourneyBar from={routes[s.planned_route_id]?.origin ?? "Plant X"} to={s.destination_name} progressKm={s.last_position?.progress_km ?? null} totalKm={routes[s.active_route_id]?.total_km ?? null} status={s.status} />
           </div>
-          <ShipmentMap
+          <ShipmentRoadMap
+            shipment={s}
             label={`Map of order ${s.order.id}. ${positionText(s, routes[s.active_route_id])}`}
             routes={layers.routes}
             markers={layers.marker ? [{ ...layers.marker, label: `Order ${s.order.id}`, emphasis: true }] : []}
+            traffic={s.live_traffic}
             focusRouteIds={[s.planned_route_id, s.active_route_id]}
             className="h-[320px]"
           />
           <p className="tnum mt-3 text-body text-ink-2">
             <span className="font-medium text-ink">Position:</span> {positionText(s, routes[s.active_route_id])}
           </p>
+          {s.live_traffic && <div className="mt-3"><LiveTrafficPanel traffic={s.live_traffic} /></div>}
           <div className="mt-5 overflow-x-auto">
             <div className="min-w-[480px]">
               <MilestoneTimeline milestones={s.milestones} />

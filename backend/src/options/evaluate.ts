@@ -2,7 +2,7 @@
 // feasible option by running computeEta on a copy of the state with the option applied, ranks them
 // and picks the recommendation. No database, no clock.
 import { computeEta, DEFAULT_ETA_CONFIG } from '../eta/computeEta';
-import type { EtaConfig, EtaResult, EtaRoute, EtaState } from '../eta/types';
+import type { EtaConfig, EtaResult, EtaRoute, EtaState, LiveDrive } from '../eta/types';
 import type { Option } from '../http/schemas';
 import { minutesBetween } from '../time';
 
@@ -15,6 +15,7 @@ export interface AlternativeInput {
   current_total_km: number;
   max_gross_t: number | null;
   closed: boolean;
+  liveDrive?: LiveDrive | null;
 }
 
 export interface OptionInput {
@@ -42,6 +43,15 @@ export interface OptionResult {
 
 const TYPE_ORDER = ['REROUTE', 'SPLIT_SHIPMENT', 'CONTINUE', 'RESCHEDULE'];
 const lateMin = (eta: string, promise: string) => Math.max(0, Math.round(minutesBetween(promise, eta)));
+
+export function rerouteReason(status: EtaState['status'], progress: number | null, grossTonnes: number, alt: Pick<AlternativeInput, 'exit_km' | 'alt_route_id' | 'closed' | 'max_gross_t'>): string | null {
+  if (status !== 'IN_TRANSIT') return 'Shipment is not in transit';
+  if (progress === null) return 'Truck position is unknown';
+  if (progress > alt.exit_km) return `Truck has passed the exit at km ${alt.exit_km}`;
+  if (alt.closed) return `${alt.alt_route_id} is closed`;
+  if (alt.max_gross_t !== null && grossTonnes > alt.max_gross_t) return `Gross weight ${grossTonnes} t exceeds the ${alt.max_gross_t} t limit on ${alt.alt_route_id}`;
+  return null;
+}
 
 export function evaluateOptions(input: OptionInput): OptionResult {
   const cfg = input.etaConfig ?? DEFAULT_ETA_CONFIG;
@@ -77,14 +87,8 @@ export function evaluateOptions(input: OptionInput): OptionResult {
   for (const alt of input.alternatives) {
     const id = `OPT-REROUTE-${alt.alt_route_id}`;
     const label = `Reroute via ${alt.name} (${alt.alt_route_id})`;
-    const progress = state.progress_km ?? 0;
-    let reason: string | null = null;
-    if (input.status !== 'IN_TRANSIT') reason = 'Shipment is not in transit';
-    else if (state.progress_km === null) reason = 'Truck position is unknown';
-    else if (progress > alt.exit_km) reason = `Truck has passed the exit at km ${alt.exit_km}`;
-    else if (alt.closed) reason = `${alt.alt_route_id} is closed`;
-    else if (alt.max_gross_t !== null && input.gross_t > alt.max_gross_t)
-      reason = `Gross weight ${input.gross_t} t exceeds the ${alt.max_gross_t} t limit on ${alt.alt_route_id}`;
+    const reason = rerouteReason(input.status, state.progress_km, input.gross_t, alt)
+      ?? (state.liveRouting && (!state.liveRouting.drive || !alt.liveDrive) ? 'Refresh live traffic to compare routes' : null);
     if (reason) {
       options.push({ id, type: 'REROUTE', feasible: false, label, infeasible_reason: reason });
       continue;
@@ -92,6 +96,8 @@ export function evaluateOptions(input: OptionInput): OptionResult {
     const hypo: EtaState = {
       ...state,
       route: alt.route,
+      liveRouting: state.liveRouting && { drive: alt.liveDrive ?? null },
+      forecast: null,
       diverted_from: { route_id: state.route.id, at_km: alt.exit_km },
       previous: null,
     };

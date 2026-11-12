@@ -5,6 +5,7 @@ import { useDemoCommand, useDemoState } from "../../api/queries";
 import { Button, Card, CardHeader, ErrorNote, Loading, Skeleton } from "../../components/ui";
 import { clockTz } from "../../lib/time";
 import { ANY_MOCKS, isMocked } from "../../lib/env";
+import { LiveRouteControls } from "./LiveRouteControls";
 
 /* Demo controls (DESIGN.md 10.4): reset, start, pause and speed for the replay. Coordinator, demo mode only. */
 const SPEEDS = [1, 60, 300, 600];
@@ -25,6 +26,7 @@ export function DemoControls() {
   return (
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-6 sm:px-6">
       <h1 className="text-figure font-[750] tracking-[-0.025em]">Demo controls</h1>
+      {!isMocked("/demo/live-route") && <LiveRouteControls />}
       {state.error && <ErrorNote what="the demo state" error={state.error} onRetry={() => state.refetch()} loadedAt={state.dataUpdatedAt || undefined} />}
       {cmd.error && <ErrorNote what="the demo command" error={cmd.error} onRetry={() => cmd.reset()} />}
 

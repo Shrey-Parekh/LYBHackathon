@@ -139,7 +139,7 @@ function Trip({ s, error, onRetry, loadedAt }: { s: ShipmentDetail; error: unkno
 
       <section aria-labelledby="pos-h" className="rounded-lg border border-line bg-surface p-4">
         <h2 id="pos-h" className="text-meta font-medium text-muted">
-          Position{DEMO_MODE ? ": simulated" : ""}
+          Position{DEMO_MODE || s.live_traffic ? ": simulated" : ""}
         </h2>
         <div className="mt-3">
           <JourneyBar from={routes[s.planned_route_id]?.origin ?? "Plant X"} to={s.destination_name} progressKm={s.last_position?.progress_km ?? null} totalKm={routes[s.active_route_id]?.total_km ?? null} status={s.status} />

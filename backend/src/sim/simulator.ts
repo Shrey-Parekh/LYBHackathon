@@ -34,6 +34,7 @@ export class Simulator implements CounterfactualProvider {
     this.clock.paused = true;
     this.clock.speed = this.ctx.fixtures.config.demo.speed;
     seedDatabase(this.ctx, actorUserId);
+    this.ctx.liveRouteDemo?.reset();
     this.status = 'IDLE';
     this.scenarioId = null;
     this.pauses = [...sc.pause_at].sort();

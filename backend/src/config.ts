@@ -7,6 +7,7 @@ export interface AppConfig {
   corsOrigins: string[];
   databaseFile: string;
   demoMode: boolean;
+  tomTomApiKey?: string;
   /** Validate every response body against its Zod schema. On everywhere except production. */
   validateResponses: boolean;
 }
@@ -25,6 +26,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       .filter(Boolean),
     databaseFile: env.DATABASE_FILE ?? './data/control-tower.sqlite',
     demoMode: env.DEMO_MODE === 'true',
+    tomTomApiKey: env.TOMTOM_API_KEY?.trim() || undefined,
     validateResponses: env.NODE_ENV !== 'production',
   };
 }

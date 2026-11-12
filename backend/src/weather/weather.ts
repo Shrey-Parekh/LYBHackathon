@@ -150,7 +150,9 @@ export class RouteWeather {
 
   isFresh(): boolean {
     const at = this.snapshot.fetched_at;
-    return at !== null && this.wallClock() - Date.parse(at) < this.cfg.refresh_min * 60_000;
+    if (at === null || this.wallClock() - Date.parse(at) >= this.cfg.refresh_min * 60_000) return false;
+    const routes = this.routes().filter((route) => route.geometry);
+    return routes.length === this.snapshot.routes.length && routes.every((route) => this.snapshot.routes.some((cached) => cached.route_id === route.id));
   }
 
   /** Refresh unless fresh. Concurrent callers share one request. Never throws. */
