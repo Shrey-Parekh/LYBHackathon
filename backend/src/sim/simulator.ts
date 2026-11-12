@@ -149,7 +149,8 @@ export class Simulator implements CounterfactualProvider {
       const route = getRoute(ctx.db, s.active_route_id)!;
       if (!route.geometry) continue;
       const km = groundTruthKm(ctx.fixtures.scenario.ground_truth[id], s.active_route_id, t);
-      const [lng, lat] = pointAtKm(JSON.parse(route.geometry).coordinates as LngLat[], route.total_km, km);
+      const g = JSON.parse(route.geometry);
+      const [lng, lat] = pointAtKm(g.coordinates as LngLat[], route.total_km, km, g.chainage_km);
       this.post(id, t, 'POSITION', { lat, lng });
     }
     staleTick(ctx);

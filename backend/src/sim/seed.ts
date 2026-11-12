@@ -121,7 +121,7 @@ export function seedDatabase(ctx: Ctx, actorUserId: string | null): void {
         for (let t = startMs; t <= Date.parse(now); t += posInterval * 60_000) {
           const at = toIso(t);
           const km = Math.round(groundTruthKm(gt, s.route_id, at) * 1000) / 1000;
-          const [lng, lat] = pointAtKm(route.geometry.coordinates as LngLat[], route.total_km, km);
+          const [lng, lat] = pointAtKm(route.geometry.coordinates as LngLat[], route.total_km, km, route.geometry.chainage_km);
           seedEvent(ctx, s.id, 'POSITION', at, { lat, lng }, s.route_id, km);
           ins('UPDATE shipments SET last_lat = ?, last_lng = ?, last_progress_km = ?, last_position_at = ? WHERE id = ?', lat, lng, km, at, s.id);
         }
