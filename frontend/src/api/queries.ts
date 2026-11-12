@@ -3,7 +3,7 @@ import { api, downloadInvoice, uploadInvoice } from "./client";
 import { streamStatus } from "./stream";
 import type {
   Alert, Decision, DecisionRequest, DelayCauseRow, DemoState, EtaSnapshot, ImpactMetrics, Notification, OnTimeRow,
-  AssistantAnswer, AssistantStatus, ChatTurn, EvPreview, LiveDemoArea, LiveRouteSource, LiveRouteState, LiveRouteTrip, LiveShipmentDraft, OptionSet, RoadConditions, RouteDetail, RouteWeatherResponse, ShipmentDetail, ShipmentSummary,
+  AssistantAnswer, AssistantStatus, ChatTurn, InvoiceMeta, EvPreview, LiveDemoArea, LiveRouteSource, LiveRouteState, LiveRouteTrip, LiveShipmentDraft, OptionSet, RoadConditions, RouteDetail, RouteWeatherResponse, ShipmentDetail, ShipmentSummary,
 } from "./contract";
 
 /*
@@ -115,6 +115,15 @@ export function useUploadInvoice(shipmentId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (file: File) => uploadInvoice(shipmentId, file),
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.shipment(shipmentId) }),
+  });
+}
+
+/** The API builds the PDF from the shipment data and the fictional rates in the seed. */
+export function useGenerateInvoice(shipmentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<InvoiceMeta>(`/shipments/${shipmentId}/invoice/generate`, { method: "POST" }),
     onSettled: () => qc.invalidateQueries({ queryKey: keys.shipment(shipmentId) }),
   });
 }

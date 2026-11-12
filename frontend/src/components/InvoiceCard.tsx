@@ -1,13 +1,14 @@
 import { useId, useRef, useState } from "react";
-import { DownloadSimple, FilePdf, UploadSimple } from "@phosphor-icons/react";
-import { useDownloadInvoice, useUploadInvoice } from "../api/queries";
+import { DownloadSimple, FilePdf, MagicWand, UploadSimple } from "@phosphor-icons/react";
+import { useDownloadInvoice, useGenerateInvoice, useUploadInvoice } from "../api/queries";
 import type { ShipmentDetail } from "../api/contract";
 import { dateTimeTz } from "../lib/time";
 import { Button, Card, CardHeader } from "./ui";
 
 /*
-  Invoice for a shipment (bonus item, brief page 7). The coordinator uploads or replaces one PDF;
-  the customer downloads it. The API repeats these checks; they are here so the reason is shown at once.
+  Invoice for a shipment (bonus item, brief page 7). The coordinator generates one from the shipment
+  data (fictional rates, database/README.md) or uploads a PDF; the customer downloads it.
+  The API repeats the file checks; they are here so the reason is shown at once.
 */
 export const MAX_INVOICE_BYTES = 2 * 1024 * 1024;
 
@@ -18,7 +19,9 @@ export function fileSize(bytes: number): string {
 export function InvoiceCard({ shipment, canUpload = false }: { shipment: ShipmentDetail; canUpload?: boolean }) {
   const invoice = shipment.invoice ?? null;
   const upload = useUploadInvoice(shipment.id);
+  const generate = useGenerateInvoice(shipment.id);
   const download = useDownloadInvoice(shipment.id);
+  const saving = upload.isPending || generate.isPending;
   const inputRef = useRef<HTMLInputElement>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const headingId = useId();
@@ -26,6 +29,7 @@ export function InvoiceCard({ shipment, canUpload = false }: { shipment: Shipmen
   function onFile(file: File | undefined) {
     if (inputRef.current) inputRef.current.value = ""; // so the same file can be chosen again
     upload.reset();
+    generate.reset();
     if (!file) return;
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) return setProblem("Choose a PDF file.");
     if (file.size > MAX_INVOICE_BYTES) return setProblem(`That file is ${fileSize(file.size)}. The limit is 2 MB.`);
@@ -33,7 +37,13 @@ export function InvoiceCard({ shipment, canUpload = false }: { shipment: Shipmen
     upload.mutate(file);
   }
 
-  const error = problem ?? upload.error?.message ?? download.error?.message ?? null;
+  function onGenerate() {
+    setProblem(null);
+    upload.reset();
+    generate.mutate();
+  }
+
+  const error = problem ?? upload.error?.message ?? generate.error?.message ?? download.error?.message ?? null;
 
   return (
     <Card aria-labelledby={headingId}>
@@ -55,7 +65,7 @@ export function InvoiceCard({ shipment, canUpload = false }: { shipment: Shipmen
             </Button>
           </div>
         ) : (
-          <p className="text-body text-muted">{canUpload ? "No invoice uploaded yet. The customer is told as soon as you add one." : "Your invoice is not ready yet. We will tell you here when it is."}</p>
+          <p className="text-body text-muted">{canUpload ? "No invoice yet. Generate one from this shipment or upload your own; the customer is told as soon as you add it." : "Your invoice is not ready yet. We will tell you here when it is."}</p>
         )}
 
         {canUpload && (
@@ -69,15 +79,19 @@ export function InvoiceCard({ shipment, canUpload = false }: { shipment: Shipmen
               aria-label={`Invoice PDF for ${shipment.id}`}
               onChange={(e) => onFile(e.target.files?.[0])}
             />
-            <Button variant={invoice ? "secondary" : "primary"} disabled={upload.isPending} onClick={() => inputRef.current?.click()}>
-              <UploadSimple size={16} weight="bold" aria-hidden />
-              {upload.isPending ? "Uploading…" : invoice ? "Replace PDF" : "Upload PDF"}
+            <Button variant={invoice ? "secondary" : "primary"} disabled={saving} onClick={onGenerate}>
+              <MagicWand size={16} weight="bold" aria-hidden />
+              {generate.isPending ? "Generating…" : invoice ? "Generate again" : "Generate invoice"}
             </Button>
-            <p className="text-meta text-muted">PDF only, up to 2 MB.</p>
+            <Button disabled={saving} onClick={() => inputRef.current?.click()}>
+              <UploadSimple size={16} weight="bold" aria-hidden />
+              {upload.isPending ? "Uploading…" : invoice ? "Replace with a PDF" : "Upload PDF"}
+            </Button>
+            <p className="basis-full text-meta text-muted">Generated invoices use fictional rates. Uploads: PDF only, up to 2 MB.</p>
           </div>
         )}
 
-        {upload.isSuccess && !error && <p role="status" className="text-meta text-low">Invoice saved. The customer has been notified.</p>}
+        {(upload.isSuccess || generate.isSuccess) && !saving && !error && <p role="status" className="text-meta text-low">Invoice saved. The customer has been notified.</p>}
         {error && <p role="alert" className="rounded-md bg-high-soft px-3 py-2 text-meta text-high">{error}</p>}
       </div>
     </Card>

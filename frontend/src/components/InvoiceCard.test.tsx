@@ -4,8 +4,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { InvoiceCard, MAX_INVOICE_BYTES, fileSize } from "./InvoiceCard";
 import type { InvoiceMeta, ShipmentDetail } from "../api/contract";
 
-const client = vi.hoisted(() => ({ uploadInvoice: vi.fn(), downloadInvoice: vi.fn() }));
+const client = vi.hoisted(() => ({ uploadInvoice: vi.fn(), downloadInvoice: vi.fn(), api: vi.fn() }));
 vi.mock("../api/client", async (original) => ({ ...(await original<typeof import("../api/client")>()), ...client }));
+const api = client.api;
 
 const META: InvoiceMeta = { filename: "INV-5001.pdf", size_bytes: 48_200, uploaded_at: "2026-11-16T03:20:00Z", uploaded_by_name: "Meera Kulkarni" };
 const shipment = (invoice: InvoiceMeta | null) => ({ id: "SHP-1001", invoice }) as ShipmentDetail;
@@ -24,6 +25,7 @@ describe("InvoiceCard", () => {
   beforeEach(() => {
     client.uploadInvoice.mockReset();
     client.downloadInvoice.mockReset();
+    api.mockReset();
   });
 
   it("customer: waits when there is no invoice, and downloads when there is one", async () => {
@@ -51,9 +53,18 @@ describe("InvoiceCard", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Invoice saved. The customer has been notified.");
   });
 
+  it("coordinator: generates the invoice with one click", async () => {
+    api.mockResolvedValue(META);
+    renderCard(null, true);
+    await userEvent.click(screen.getByRole("button", { name: "Generate invoice" }));
+    expect(api).toHaveBeenCalledWith("/shipments/SHP-1001/invoice/generate", { method: "POST" });
+    expect(await screen.findByRole("status")).toHaveTextContent("Invoice saved. The customer has been notified.");
+  });
+
   it("coordinator: a wrong type or an oversized file is refused before any upload", async () => {
     renderCard(META, true);
-    expect(screen.getByRole("button", { name: "Replace PDF" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Replace with a PDF" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate again" })).toBeInTheDocument();
     const input = screen.getByLabelText("Invoice PDF for SHP-1001");
     await userEvent.upload(input, new File(["x"], "photo.png", { type: "image/png" }), { applyAccept: false });
     expect(screen.getByRole("alert")).toHaveTextContent("Choose a PDF file.");
