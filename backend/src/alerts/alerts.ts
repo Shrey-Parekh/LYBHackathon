@@ -82,7 +82,7 @@ export function evaluateAlerts(
       audit(db, now, null, 'ALERT_OPENED', 'alert', id, { shipment_id: s.id, level });
       if (level === 'HIGH') riskHigh();
       else if (!res.tracking_lost) {
-        send(coordinatorIds(db), 'RISK_MEDIUM', `${s.id} at risk`, `${s.id} at risk: ${res.headline}`);
+        send(coordinatorIds(db), 'RISK_MEDIUM', `${s.id} at risk`, `${s.id}: ${res.headline}`);
       }
       kinds.push('alert');
       open = openAlert(db, s.id);

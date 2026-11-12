@@ -78,7 +78,7 @@ export function positionText(s: Pick<ShipmentDetail, "last_position" | "active_r
   if (!p) return s.status === "PLANNED" || s.status === "DISPATCHED" ? "Not departed yet." : "No position received.";
   const stale = s.current_eta?.confidence === "LOW" && (s.current_eta?.position_age_min ?? 0) > 0;
   const of = route ? ` of ${route.total_km}` : "";
-  return `km ${p.progress_km}${of} on ${s.active_route_id}, ${stale ? "last seen" : "last update"} ${clockTz(p.occurred_at)}.`;
+  return `km ${p.progress_km === null ? '?' : Math.round(p.progress_km)}${of} on ${s.active_route_id}, ${stale ? "last seen" : "last update"} ${clockTz(p.occurred_at)}.`;
 }
 
 export function isStale(eta: EtaSnapshot | null | undefined) {
@@ -136,7 +136,7 @@ export function JourneyBar({ from, to, progressKm, totalKm, status }: { from: st
       </div>
       <div className="mt-1 grid grid-cols-[1fr_auto_1fr] gap-3 text-meta text-muted">
         <span className="min-w-0">{from}</span>
-        <span className="tnum whitespace-nowrap font-medium text-ink-2">{done ? "Arrived" : progressKm !== null && totalKm ? `km ${progressKm} of ${totalKm}` : "Not departed"}</span>
+        <span className="tnum whitespace-nowrap font-medium text-ink-2">{done ? "Arrived" : progressKm !== null && totalKm ? `km ${Math.round(progressKm)} of ${totalKm}` : "Not departed"}</span>
         <span className="text-right">{to}</span>
       </div>
     </div>
