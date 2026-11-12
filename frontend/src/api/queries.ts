@@ -3,7 +3,7 @@ import { api } from "./client";
 import { streamStatus } from "./stream";
 import type {
   Alert, Decision, DecisionRequest, DelayCauseRow, DemoState, EtaSnapshot, ImpactMetrics, Notification, OnTimeRow,
-  OptionSet, RouteDetail, ShipmentDetail, ShipmentSummary,
+  OptionSet, RouteDetail, RouteWeatherResponse, ShipmentDetail, ShipmentSummary,
 } from "./contract";
 
 /*
@@ -24,6 +24,7 @@ export const keys = {
   delayCauses: (groupBy: string) => ["dashboard", "delay-causes", groupBy] as const,
   impact: ["dashboard", "impact"] as const,
   demo: ["demo-state"] as const,
+  weather: ["weather"] as const,
 };
 
 export function makeQueryClient() {
@@ -76,6 +77,10 @@ export const useImpact = () =>
 
 export const useDemoState = (enabled = true) =>
   useQuery({ queryKey: keys.demo, enabled, queryFn: ({ signal }) => api<DemoState>(`/demo/state`, { signal }) });
+
+/** Real-world forecast: the backend caches it for 15 minutes, so polling every 5 minutes is plenty. */
+export const useRouteWeather = () =>
+  useQuery({ queryKey: keys.weather, staleTime: 5 * 60_000, refetchInterval: 5 * 60_000, queryFn: ({ signal }) => api<RouteWeatherResponse>(`/weather/routes`, { signal }) });
 
 export function useMarkRead() {
   const qc = useQueryClient();

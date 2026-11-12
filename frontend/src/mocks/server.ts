@@ -152,6 +152,11 @@ export async function mockFetch(input: RequestInfo | URL, init: RequestInit = {}
     return json(200, { id, read_at: world.now });
   }
 
+  if (path === "/weather/routes") {
+    if (!isCoord) return err(403, "FORBIDDEN", "Not allowed for this role");
+    return json(200, MOCK_WEATHER);
+  }
+
   if (path.startsWith("/dashboard/") || path.startsWith("/metrics/")) {
     if (!isCoord) return err(403, "FORBIDDEN", "Not allowed for this role");
     return dashboard(path, url.searchParams.get("group_by") === "transporter" ? "transporter" : "route", world);
@@ -428,3 +433,18 @@ function streamResponse(headers: Headers, signal?: AbortSignal): Promise<Respons
   });
   return Promise.resolve(new Response(stream, { status: 200, headers: { "Content-Type": "text/event-stream" } }));
 }
+
+/** Fixed sample for the mock API; the real backend asks Open-Meteo. */
+const MOCK_WEATHER = {
+  mode: "ADVISORY",
+  source: "Sample data (mock API); the real backend uses Open-Meteo",
+  status: "OK",
+  fetched_at: "2026-11-16T03:20:00Z",
+  error: null,
+  routes: [
+    { route_id: "RTE-01", route_name: "Talegaon-Chakan road", level: "CLEAR", suggested_delay_min: 0, worst: null, points: [] },
+    { route_id: "RTE-01B", route_name: "Pune-Shikrapur road", level: "CLEAR", suggested_delay_min: 0, worst: null, points: [] },
+    { route_id: "RTE-02", route_name: "Kasara ghat road", level: "MODERATE", suggested_delay_min: 10, worst: { km: 120, reasons: ["rain 2 mm/h"] }, points: [] },
+    { route_id: "RTE-02B", route_name: "Wada-Trimbakeshwar road", level: "CLEAR", suggested_delay_min: 0, worst: null, points: [] },
+  ],
+};
