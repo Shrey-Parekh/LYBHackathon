@@ -8,7 +8,7 @@ import { EtaPanel } from "../../components/EtaPanel";
 import { ShipmentRoadMap } from "../../components/ShipmentRoadMap";
 import { LiveTrafficPanel } from "../../components/LiveTrafficPanel";
 import { InvoiceCard } from "../../components/InvoiceCard";
-import { JourneyBar, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
+import { ExtraOrders, JourneyBar, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
 import { clockTz, dateTimeTz } from "../../lib/time";
 
 /*
@@ -113,6 +113,7 @@ export function DeliveryDetail() {
           <KeyValue label="Original promise">{clockTz(s.order.original_promised_by)}</KeyValue>
           <KeyValue label="Agreed delivery">{clockTz(s.order.agreed_delivery_by)}</KeyValue>
         </dl>
+        <ExtraOrders shipment={s} />
       </Card>
 
       <InvoiceCard shipment={s} />
