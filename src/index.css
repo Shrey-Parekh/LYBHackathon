@@ -1,0 +1,131 @@
+@import "tailwindcss";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "leaflet/dist/leaflet.css";
+
+/*
+  Design tokens. Every colour, size, radius and duration used by the app comes from here.
+  Rule: colour carries meaning only (risk levels and the primary action); everything else is grey.
+  Contrast of every text/background pair below is at least 4.5:1 (checked in docs/design-tokens.md).
+*/
+@theme {
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+
+  /* Neutrals */
+  --color-canvas: #f5f6f7;
+  --color-surface: #ffffff;
+  --color-sunken: #eef0f2;
+  --color-line: #dde1e5;
+  --color-line-strong: #b9c0c7;
+  --color-ink: #14181d;
+  --color-ink-2: #353c44;
+  --color-muted: #535b64;
+
+  /* The one accent: primary action, focus ring, selected row */
+  --color-accent: #0b5566;
+  --color-accent-hover: #08414e;
+  --color-accent-soft: #e3eff2;
+
+  /* Risk: always shown with an icon and a word as well */
+  --color-low: #1d6b3c;
+  --color-low-soft: #e6f2ea;
+  --color-medium: #8a4b00;
+  --color-medium-soft: #fcefd9;
+  --color-high: #a3171c;
+  --color-high-soft: #fbe6e6;
+
+  /* Short type scale (px): 13 meta, 15 body, 17 lead, 20 heading, 28 figure, 40 driver figure */
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.25rem;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.5rem;
+  --text-lead: 1.0625rem;
+  --text-lead--line-height: 1.625rem;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.75rem;
+  --text-figure: 1.75rem;
+  --text-figure--line-height: 2.125rem;
+  --text-driver: 2.5rem;
+  --text-driver--line-height: 2.875rem;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  /* Motion durations: interface changes stay within 150-300 ms */
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+  --duration-slow: 300ms;
+  --ease-out-quiet: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    min-height: 100dvh;
+  }
+  /* Times, durations and distances line up in columns */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  ::selection {
+    background: var(--color-accent-soft);
+  }
+}
+
+/* Skeleton shimmer is replaced by a static block under reduced motion */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.skeleton {
+  background: var(--color-sunken);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+/* Brief highlight on a factor row whose minutes changed */
+@keyframes row-flash {
+  from { background-color: var(--color-medium-soft); }
+  to { background-color: transparent; }
+}
+.row-changed {
+  animation: row-flash 1.6s var(--ease-out-quiet) 1;
+}
+
+/* Leaflet: plain background when tiles fail, quiet controls */
+.leaflet-container {
+  background: var(--color-sunken);
+  font-family: var(--font-sans);
+}
+.leaflet-control-attribution {
+  font-size: 11px;
+}
+/* Route draw-in after an approved reroute */
+@keyframes route-draw {
+  from { stroke-dashoffset: var(--route-length, 2000); }
+  to { stroke-dashoffset: 0; }
+}
+.route-draw {
+  animation: route-draw 1200ms var(--ease-out-quiet) 1 both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  .route-draw { animation: none; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+  }
+}
