@@ -136,7 +136,8 @@ function applyEvent(ctx: Ctx, s: ShipmentRow, ev: EventRequest, at: string, now:
       const route = getRoute(db, s.active_route_id)!;
       let km: number | null = null;
       if (route.geometry) {
-        const p = projectToKm(JSON.parse(route.geometry).coordinates, route.total_km, [ev.payload.lng, ev.payload.lat]);
+        const g = JSON.parse(route.geometry);
+        const p = projectToKm(g.coordinates, route.total_km, [ev.payload.lng, ev.payload.lat], g.chainage_km);
         km = p.offKm <= MAX_OFF_ROUTE_KM ? p.km : null;
       }
       db.prepare('UPDATE shipments SET last_lat = ?, last_lng = ?, last_progress_km = ?, last_position_at = ? WHERE id = ?').run(

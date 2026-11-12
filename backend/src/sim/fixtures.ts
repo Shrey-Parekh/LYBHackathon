@@ -42,7 +42,8 @@ export interface FixtureRoute {
   origin: string;
   destination: string;
   total_km: number;
-  geometry: { type: 'LineString'; coordinates: [number, number][] } | null;
+  /** chainage_km (optional): km of each vertex; see backend/src/shipments/geometry.ts. */
+  geometry: { type: 'LineString'; coordinates: [number, number][]; chainage_km?: number[] } | null;
   restrictions: { max_gross_t: number | null; closed: boolean };
   segments: { seq: number; start_km: number; end_km: number; baseline_speed_kmph: number; dwell_after_min: number }[];
 }
