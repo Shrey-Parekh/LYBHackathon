@@ -1,8 +1,6 @@
-import { AnimatePresence, motion } from "motion/react";
 import type { EtaSnapshot } from "../api/contract";
 import { clock, clockTz, duration as fmtDuration } from "../lib/time";
-import { duration, easeOut } from "../lib/motion";
-import { ConfidenceTag, RiskBadge } from "./ui";
+import { ConfidenceTag, CrossFade, RiskBadge } from "./ui";
 
 /*
   ETA panel (DESIGN.md 7.2, 7.4). Shows the API's snapshot as it is: ETA, window, promise, risk,
@@ -38,20 +36,13 @@ export function EtaPanel({
           <p id={headingId} className="text-meta font-medium text-muted">
             {audience === "customer" ? "Expected delivery" : "Estimated arrival"}
           </p>
-          <div className="relative mt-0.5 h-[2.125rem]">
-            <AnimatePresence initial={false} mode="popLayout">
-              <motion.p
-                key={snapshot.eta}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: duration.slow, ease: easeOut }}
-                className="tnum text-figure font-semibold text-ink"
-              >
-                {clock(snapshot.eta)} <span className="text-lead font-medium text-muted">IST</span>
-              </motion.p>
-            </AnimatePresence>
-          </div>
+          <CrossFade value={snapshot.eta} className="mt-0.5">
+            {(eta) => (
+              <span className="tnum text-figure font-semibold text-ink">
+                {clock(eta)} <span className="text-lead font-medium text-muted">IST</span>
+              </span>
+            )}
+          </CrossFade>
           <p className="tnum mt-1 text-meta text-ink-2">
             Likely between {clock(snapshot.eta_window.earliest)} and {clockTz(snapshot.eta_window.latest)}
           </p>

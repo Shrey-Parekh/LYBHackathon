@@ -166,3 +166,21 @@ dialog.ct-dialog::backdrop {
     to { opacity: 1; }
   }
 }
+
+/* Cross-fade for a changing value (ETA, risk badge, counts). The outgoing copy is aria-hidden and
+   removed after the animation, so assistive tech and background windows only ever see the current value. */
+@keyframes xf-in {
+  from { opacity: 0; transform: translateY(var(--xf-shift, 0)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes xf-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(calc(var(--xf-shift, 0) * -1)); }
+}
+.xf { display: inline-grid; }
+.xf > * { grid-area: 1 / 1; }
+.xf-in { animation: xf-in var(--duration-slow) var(--ease-out-quiet) both; }
+.xf-out { animation: xf-out var(--duration-slow) var(--ease-out-quiet) both; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  .xf-in, .xf-out { --xf-shift: 0 !important; }
+}

@@ -1,10 +1,8 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { forwardRef, useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { ArrowClockwise, CheckCircle, Circle, WarningCircle, WarningOctagon, CellSignalSlash } from "@phosphor-icons/react";
 import type { Confidence, RiskLevel, ShipmentStatus } from "../api/contract";
 import { CONFIDENCE_WORD, RISK_WORD, STATUS_WORD } from "../lib/risk";
 import { clockTz } from "../lib/time";
-import { duration, easeOut } from "../lib/motion";
 
 /* ---------------- Button ---------------- */
 
@@ -51,20 +49,54 @@ export function RiskIcon({ level, size = 18 }: { level: RiskLevel; size?: number
 
 export function RiskBadge({ level, size = "md" }: { level: RiskLevel; size?: "md" | "lg" }) {
   return (
-    <span className={`relative inline-grid overflow-hidden rounded-sm align-middle ${size === "lg" ? "text-lead" : "text-meta"}`}>
-      <AnimatePresence initial={false} mode="popLayout">
-        <motion.span
-          key={level}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: duration.base, ease: easeOut }}
-          className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2 font-semibold ${size === "lg" ? "py-1" : "py-0.5"} ${RISK_STYLE[level]}`}
-        >
-          <RiskIcon level={level} size={size === "lg" ? 20 : 16} />
-          {RISK_WORD[level]}
-        </motion.span>
-      </AnimatePresence>
+    <CrossFade value={level} shift="6px" className={`overflow-hidden rounded-sm align-middle ${size === "lg" ? "text-lead" : "text-meta"}`}>
+      {(l) => (
+        <span className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2 font-semibold ${size === "lg" ? "py-1" : "py-0.5"} ${RISK_STYLE[l as RiskLevel]}`}>
+          <RiskIcon level={l as RiskLevel} size={size === "lg" ? 20 : 16} />
+          {RISK_WORD[l as RiskLevel]}
+        </span>
+      )}
+    </CrossFade>
+  );
+}
+
+/**
+  Cross-fades a changing value: the new value fades in while the old one fades out on top.
+  The old copy is aria-hidden and removed after 300 ms, so only the current value is ever read out.
+  Plain CSS (see .xf in index.css), so a hidden window never accumulates stale copies.
+*/
+export function CrossFade<T extends string | number>({
+  value,
+  children,
+  className = "",
+  shift = "0px",
+}: {
+  value: T;
+  children: (v: T) => ReactNode;
+  className?: string;
+  shift?: string;
+}) {
+  const [previous, setPrevious] = useState<{ v: T; n: number } | null>(null);
+  const last = useRef(value);
+  const count = useRef(0);
+  useEffect(() => {
+    if (last.current === value) return;
+    count.current += 1;
+    setPrevious({ v: last.current, n: count.current });
+    last.current = value;
+    const t = setTimeout(() => setPrevious(null), 320);
+    return () => clearTimeout(t);
+  }, [value]);
+  return (
+    <span className={`xf ${className}`} style={{ ["--xf-shift" as string]: shift }}>
+      {previous && (
+        <span key={`out-${previous.n}`} className="xf-out" aria-hidden>
+          {children(previous.v)}
+        </span>
+      )}
+      <span key={`in-${count.current}`} className={count.current ? "xf-in" : ""}>
+        {children(value)}
+      </span>
     </span>
   );
 }

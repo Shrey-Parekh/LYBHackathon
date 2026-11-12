@@ -1,9 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
 import { Bell } from "@phosphor-icons/react";
 import { useMarkRead, useNotifications } from "../api/queries";
 import { dateTimeTz } from "../lib/time";
-import { duration, easeOut } from "../lib/motion";
+import { CrossFade } from "./ui";
 import { useToast } from "./Toasts";
 
 /*
@@ -67,20 +66,11 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
         className="relative inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-md px-2 text-ink-2 hover:bg-sunken"
       >
         <Bell size={20} weight="bold" aria-hidden />
-        <span className="relative inline-grid h-5 min-w-5 overflow-hidden">
-          <AnimatePresence initial={false} mode="popLayout">
-            <motion.span
-              key={unread}
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -10, opacity: 0 }}
-              transition={{ duration: duration.fast, ease: easeOut }}
-              className={`tnum inline-flex h-5 min-w-5 items-center justify-center rounded-sm px-1 text-meta font-semibold ${unread ? "bg-accent text-white" : "bg-sunken text-muted"}`}
-            >
-              {unread}
-            </motion.span>
-          </AnimatePresence>
-        </span>
+        <CrossFade value={unread} shift="8px" className="h-5 min-w-5 overflow-hidden">
+          {(n) => (
+            <span className={`tnum inline-flex h-5 min-w-5 items-center justify-center rounded-sm px-1 text-meta font-semibold ${n ? "bg-accent text-white" : "bg-sunken text-muted"}`}>{n}</span>
+          )}
+        </CrossFade>
       </button>
       {open && (
         <div id={menuId} className={`absolute z-[900] mt-2 w-[min(400px,calc(100vw-32px))] rounded-lg border border-line-strong bg-surface ${align === "right" ? "right-0" : "left-0"}`}>
