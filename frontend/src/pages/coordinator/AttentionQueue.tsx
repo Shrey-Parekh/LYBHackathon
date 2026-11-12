@@ -8,6 +8,7 @@ import type { RiskLevel, ShipmentSummary } from "../../api/contract";
 import { Button, CountUp, CrossFade, EmptyState, ErrorNote, Loading, RiskIcon, Skeleton, StatusTag } from "../../components/ui";
 import { ShipmentMap, type MapMarker, type MapRoute } from "../../components/ShipmentMap";
 import { RiskCell, isStale, positionText } from "../../components/ShipmentParts";
+import { WeatherPanel } from "../../components/WeatherPanel";
 import { RISK_WORD } from "../../lib/risk";
 import { clock } from "../../lib/time";
 import { duration, easeOut } from "../../lib/motion";
@@ -82,6 +83,7 @@ export function AttentionQueue() {
               </Group>
             </LayoutGroup>
           )}
+          <WeatherPanel />
         </div>
 
         <div className="xl:col-span-5">

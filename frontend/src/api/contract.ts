@@ -310,3 +310,22 @@ export interface StreamHint {
 export interface ApiErrorBody {
   error: { code: string; message: string; details?: Record<string, unknown> };
 }
+
+/** GET /weather/routes: live forecast along each route (Open-Meteo), graded by the seed thresholds */
+export type WeatherLevel = "CLEAR" | "MODERATE" | "SEVERE";
+export interface RouteWeather {
+  route_id: string;
+  route_name: string;
+  level: WeatherLevel;
+  suggested_delay_min: number;
+  worst: { km: number; reasons: string[] } | null;
+  points: { km: number; lat: number; lng: number; level: WeatherLevel; reasons: string[]; precipitation_mm: number; visibility_m: number; wind_kmph: number; weather_code: number }[];
+}
+export interface RouteWeatherResponse {
+  mode: "ADVISORY" | "LIVE";
+  source: string;
+  status: "OK" | "UNAVAILABLE";
+  fetched_at: string | null;
+  error: string | null;
+  routes: RouteWeather[];
+}
