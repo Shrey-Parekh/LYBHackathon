@@ -3,7 +3,20 @@
   "$id": "config.schema.json",
   "title": "config.json: thresholds and defaults from DESIGN.md sections 6.3 to 6.7",
   "$ref": "common.schema.json#/$defs/file",
-  "required": ["fictional_assumptions", "eta", "category_default_delay_min", "alerts", "options", "impact", "demo", "disruptions"],
+  "$defs": {
+    "threshold": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["precipitation_mm", "visibility_m", "wind_kmph", "delay_min"],
+      "properties": {
+        "precipitation_mm": {"type": "number", "minimum": 0},
+        "visibility_m": {"type": "number", "minimum": 0},
+        "wind_kmph": {"type": "number", "minimum": 0},
+        "delay_min": {"type": "integer", "minimum": 0}
+      }
+    }
+  },
+  "required": ["fictional_assumptions", "eta", "category_default_delay_min", "alerts", "options", "impact", "demo", "disruptions", "weather"],
   "properties": {
     "fictional_assumptions": {"type": "array", "items": {"type": "string"}, "minItems": 1},
     "eta": {
@@ -65,6 +78,18 @@
       "additionalProperties": false,
       "required": ["cost_per_late_hour_inr"],
       "properties": {"cost_per_late_hour_inr": {"type": "number", "exclusiveMinimum": 0}}
+    },
+    "weather": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sample_every_km", "forecast_hours", "refresh_min", "moderate", "severe"],
+      "properties": {
+        "sample_every_km": {"type": "number", "exclusiveMinimum": 0},
+        "forecast_hours": {"type": "integer", "minimum": 1, "maximum": 24},
+        "refresh_min": {"type": "integer", "minimum": 1},
+        "moderate": {"$ref": "#/$defs/threshold"},
+        "severe": {"$ref": "#/$defs/threshold"}
+      }
     },
     "disruptions": {
       "type": "object",
