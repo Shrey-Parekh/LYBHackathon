@@ -3,7 +3,7 @@
   It has the same signature as fetch, so the app code path is identical with or without mocks.
   Access rules mirror DESIGN.md 5.4 so the screens behave as they will against the real API.
 */
-import type { Decision, DecisionRequest, OnTimeRow, ShipmentDetail, ShipmentEventRequest, ShipmentSummary, StreamHint, User } from "../api/contract";
+import type { Decision, DecisionRequest, InvoiceMeta, OnTimeRow, ShipmentDetail, ShipmentEventRequest, ShipmentSummary, StreamHint, User } from "../api/contract";
 import { HISTORY, ROUTES, USERS, minutes } from "./fixtures";
 import {
   currentOptionSet, demoState, deriveWorld, driverOf, initialInputs, loadInputs, onInputsChanged, rebase, saveInputs, simNow,
@@ -11,6 +11,7 @@ import {
 } from "./scenario";
 
 const LATENCY_MS = 150;
+const invoices = new Map<string, InvoiceMeta & { file: Blob }>();
 
 function json(status: number, body: unknown): Response {
   return new Response(body === null ? null : JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -61,7 +62,7 @@ export async function mockFetch(input: RequestInfo | URL, init: RequestInit = {}
   const path = url.pathname.replace(/^.*\/api\/v1/, "");
   const method = (init.method ?? "GET").toUpperCase();
   const headers = new Headers(init.headers);
-  const body = init.body ? JSON.parse(String(init.body)) : undefined;
+  const body = typeof init.body === "string" ? JSON.parse(init.body) : undefined; // an invoice upload carries a file, not JSON
 
   if (path === "/stream") return streamResponse(headers, init.signal ?? undefined);
   await wait(LATENCY_MS);
@@ -99,7 +100,27 @@ export async function mockFetch(input: RequestInfo | URL, init: RequestInit = {}
 
   if ((m = path.match(/^\/shipments\/([\w-]+)$/)) && method === "GET") {
     const s = find(m[1]);
-    return s ? json(200, forRole(user, s)) : err(404, "NOT_FOUND", "Shipment not found");
+    if (!s) return err(404, "NOT_FOUND", "Shipment not found");
+    const { file: _f, ...invoice } = invoices.get(s.id) ?? { file: null };
+    void _f;
+    return json(200, { ...forRole(user, s), ...(user.role === "DRIVER" ? {} : { invoice: "filename" in invoice ? invoice : null }) });
+  }
+
+  // Invoices are kept in memory only: a page reload or a demo reset clears them.
+  if ((m = path.match(/^\/shipments\/([\w-]+)\/invoice$/))) {
+    const s = find(m[1]);
+    if (user.role === "DRIVER" || (method === "POST" && !isCoord)) return err(403, "FORBIDDEN", "Not allowed for this role");
+    if (!s) return err(404, "NOT_FOUND", "Shipment not found");
+    if (method === "POST") {
+      const file = init.body as Blob;
+      if (!(file instanceof Blob) || !(await file.slice(0, 5).text()).startsWith("%PDF-")) return err(422, "VALIDATION_FAILED", "That file is not a PDF");
+      const meta = { filename: url.searchParams.get("filename") ?? "invoice.pdf", size_bytes: file.size, uploaded_at: world.now, uploaded_by_name: user.name };
+      invoices.set(s.id, { ...meta, file });
+      return json(201, meta);
+    }
+    const stored = invoices.get(s.id);
+    if (!stored) return err(404, "NOT_FOUND", "No invoice has been uploaded for this shipment");
+    return new Response(stored.file, { status: 200, headers: { "Content-Type": "application/pdf" } });
   }
 
   if ((m = path.match(/^\/shipments\/([\w-]+)\/eta-history$/))) {
@@ -180,6 +201,7 @@ export async function mockFetch(input: RequestInfo | URL, init: RequestInit = {}
     if (!isCoord) return err(403, "FORBIDDEN", "Not allowed for this role");
     if (path === "/demo/state") return json(200, demoState(inputs));
     if (path === "/demo/reset" && method === "POST") {
+      invoices.clear();
       saveInputs(initialInputs());
       return json(200, demoState(initialInputs()));
     }

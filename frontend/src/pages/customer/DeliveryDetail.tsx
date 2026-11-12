@@ -7,6 +7,7 @@ import { Card, CardHeader, EmptyState, ErrorNote, KeyValue, Loading, Skeleton, S
 import { EtaPanel } from "../../components/EtaPanel";
 import { ShipmentRoadMap } from "../../components/ShipmentRoadMap";
 import { LiveTrafficPanel } from "../../components/LiveTrafficPanel";
+import { InvoiceCard } from "../../components/InvoiceCard";
 import { JourneyBar, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
 import { clockTz, dateTimeTz } from "../../lib/time";
 
@@ -113,6 +114,8 @@ export function DeliveryDetail() {
           <KeyValue label="Agreed delivery">{clockTz(s.order.agreed_delivery_by)}</KeyValue>
         </dl>
       </Card>
+
+      <InvoiceCard shipment={s} />
 
       <Card aria-labelledby="notes-h">
         <CardHeader title="Updates we sent you" id="notes-h" />
