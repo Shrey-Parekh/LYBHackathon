@@ -75,6 +75,8 @@ export function shipmentSummary(ctx: Ctx, user: AuthUser, s: ShipmentRow) {
     status: s.status,
     active_route_id: s.active_route_id,
     promised_by: s.agreed_delivery_by,
+    original_promised_by: s.original_promised_by,
+    arrived_at: s.arrived_at,
     last_position: lastPosition(s),
     current_eta: snap ? snapshotToApi(snap) : null,
     open_alert: alert ? alertToApi(alert) : null,

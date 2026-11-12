@@ -228,6 +228,9 @@ export const ShipmentSummary = z.object({
   status: ShipmentStatus,
   active_route_id: z.string(),
   promised_by: IsoTime,
+  // For finished shipments, which have no live ETA: when the truck arrived, and the promise on-time is judged against.
+  original_promised_by: IsoTime,
+  arrived_at: IsoTime.nullable(),
   last_position: Position.nullable(),
   current_eta: EtaSnapshot.nullable(),
   open_alert: Alert.nullable(),
