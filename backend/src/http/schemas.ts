@@ -382,4 +382,44 @@ export const ImpactResponse = z.object({
   assumptions: z.array(z.string()),
 });
 
+// ---- Weather (Open-Meteo) ----
+const WeatherLevel = z.enum(['CLEAR', 'MODERATE', 'SEVERE']);
+const WeatherThreshold = z.object({ precipitation_mm: z.number(), visibility_m: z.number(), wind_kmph: z.number(), delay_min: z.number() });
+export const RouteWeatherResponse = z.object({
+  mode: z.enum(['ADVISORY', 'LIVE']),
+  source: z.string(),
+  status: z.enum(['OK', 'UNAVAILABLE']),
+  fetched_at: z.string().nullable(),
+  error: z.string().nullable(),
+  thresholds: z.object({
+    sample_every_km: z.number(),
+    forecast_hours: z.number(),
+    refresh_min: z.number(),
+    moderate: WeatherThreshold,
+    severe: WeatherThreshold,
+  }),
+  routes: z.array(
+    z.object({
+      route_id: z.string(),
+      route_name: z.string(),
+      level: WeatherLevel,
+      suggested_delay_min: z.number(),
+      worst: z.object({ km: z.number(), reasons: z.array(z.string()) }).nullable(),
+      points: z.array(
+        z.object({
+          km: z.number(),
+          lat: z.number(),
+          lng: z.number(),
+          level: WeatherLevel,
+          reasons: z.array(z.string()),
+          precipitation_mm: z.number(),
+          visibility_m: z.number(),
+          wind_kmph: z.number(),
+          weather_code: z.number(),
+        }),
+      ),
+    }),
+  ),
+});
+
 export const Health = z.object({ status: z.literal('ok'), demo_mode: z.boolean(), now: IsoTime });

@@ -205,6 +205,20 @@ export function computeEta(
       delays.push(f);
       if (d.estimate_source === 'DEFAULT') confidence = 'MEDIUM';
     }
+    // Live mode: forecast weather ahead. A driver's weather report wins, so it is not counted twice.
+    const fc = state.forecast;
+    if (inTransit && fc && fc.minutes > 0 && fc.at_km >= p && !active.some((d) => d.category === 'WEATHER')) {
+      const why = fc.reasons.join(', ');
+      const f: DelayFactor = {
+        code: 'WEATHER_FORECAST',
+        label: `Forecast near km ${fmtKm(Math.round(fc.at_km))}: ${why} (Open-Meteo)`,
+        minutes: fc.minutes,
+        phrase: `forecast ${fc.reasons[0] ?? 'weather'} near km ${fmtKm(Math.round(fc.at_km))}`,
+      };
+      factors.push(strip(f));
+      delays.push(f);
+      confidence = 'MEDIUM';
+    }
   }
 
   if (stale) {

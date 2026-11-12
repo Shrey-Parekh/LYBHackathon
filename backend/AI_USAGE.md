@@ -10,6 +10,8 @@ The hackathon rules allow generative AI and require teams to declare where and h
 
 | Seed data in `database/` (generator, validator, schemas, `seed/*.json`, tests, README), the map geometry export, per-vertex chainage in `backend/src/shipments/geometry.ts`, and `backend/test/seed-demo.test.ts` | Claude Code (Anthropic, Claude Opus 5.5), coding agent | Wrote the deterministic seed generator and checks from the team lead's data brief and `DESIGN.md` 6.6 and 10.1; exported route geometry once from the public OSRM router; web-searched every invented company name | Database checks (73) and backend tests (42, four of them on the real seed) were run, not assumed; the team reviews the data and must be able to explain each tuning choice in `database/README.md` |
 
+| Integration of web app, API and seed (response shapes, driver-report placement), live route weather from Open-Meteo (`backend/src/weather/`, `frontend/src/components/WeatherPanel.tsx`), the OpenRouteService export option | Claude Code (Anthropic, Claude Opus 5.5), coding agent | Compared the web app's mock API with the real API endpoint by endpoint and aligned the API; walked the demo in a browser; added the weather service with stated thresholds and stubbed-network tests | Database (73) and backend (49) tests run; the team reviews the weather thresholds in `database/README.md` |
+
 ## Run-time AI in the product
 
 None at present. The ETA, delay risk, alerts and option ranking are deterministic rules (DESIGN.md section 6.9). If the optional "Where is my order?" assistant is built with a language model, record it here.
