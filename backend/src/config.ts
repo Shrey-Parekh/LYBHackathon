@@ -8,6 +8,9 @@ export interface AppConfig {
   databaseFile: string;
   demoMode: boolean;
   tomTomApiKey?: string;
+  /** Groq key for the order-tracking assistant. Without it the assistant answers 503. */
+  groqApiKey?: string;
+  groqModel?: string;
   /** Validate every response body against its Zod schema. On everywhere except production. */
   validateResponses: boolean;
 }
@@ -27,6 +30,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     databaseFile: env.DATABASE_FILE ?? './data/control-tower.sqlite',
     demoMode: env.DEMO_MODE === 'true',
     tomTomApiKey: env.TOMTOM_API_KEY?.trim() || undefined,
+    groqApiKey: env.GROQ_API_KEY?.trim() || undefined,
+    groqModel: env.GROQ_MODEL?.trim() || undefined,
     validateResponses: env.NODE_ENV !== 'production',
   };
 }

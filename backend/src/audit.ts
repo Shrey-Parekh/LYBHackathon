@@ -15,7 +15,8 @@ export type AuditAction =
   | 'DECISION_APPROVED'
   | 'NOTIFICATION_SENT'
   | 'ACCESS_DENIED'
-  | 'DEMO_RESET';
+  | 'DEMO_RESET'
+  | 'ASSISTANT_ASKED';
 
 export function audit(
   db: Db,

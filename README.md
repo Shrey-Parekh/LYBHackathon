@@ -58,6 +58,10 @@ Use the email and password from [`database/seed/users.json`](database/seed/users
 5. On the coordinator or customer shipment map, open **Traffic flow and incidents**. The colored segments compare current speed with free-flow speed. Incident markers and the list show current reports near the next 20 km of the trip, including closures and roadworks when available. Traffic is sampled at up to three points and refreshes every two minutes while the map is open.
 6. Sign in as the assigned driver or the listed customer to see their views. The simulated vehicle moves at **1×**, at the average pace implied by the latest driving estimate. Its planned unloading time also runs at 1×. Use the scripted replay to show the complete lifecycle quickly. **Reset to 08:50** clears the live trips and restores the scripted seed.
 
+### Ask the assistant
+
+Every role has a chat button in the top bar. It answers questions such as "Where is my order?" or "Which shipments are at risk?" from the shipments that person may see, using a language model from Groq. Set `GROQ_API_KEY` in `backend/.env` (free key from console.groq.com/keys) and restart; without the key the panel says the assistant is switched off. Details and limits are in [AI_USAGE.md](backend/AI_USAGE.md#run-time-ai-in-the-product).
+
 ### Preview an electric van
 
 With a Mumbai shipment selected, expand **Preview electric van** and click **Check EV route**. Try 60% starting charge, then 25% to show how a lower charge can add a stop. TomTom estimates the route energy, arrival charge, and any charging stops for a fictional 40 kWh van and a 20% arrival reserve. The estimate includes the shipment's unloading time. This is a pre-dispatch planning check. **Start live shipment** starts the standard tracking demo.
@@ -87,6 +91,7 @@ On **Demo controls**, select **Reset to 08:50**, then **Start replay**. Use the 
 | Start button asks for a key | `TOMTOM_API_KEY` is in `backend/.env`, with a restarted backend. |
 | The live ETA has low confidence | Try **Refresh traffic**. The ETA uses estimated driving time while live routing is unavailable. |
 | Road conditions are unavailable | Check TomTom Traffic API access for the key. The map labels the speed and incident feeds separately so a successful feed can still display. |
+| The assistant is switched off | `GROQ_API_KEY` is in `backend/.env`, with a restarted backend. |
 | No driver available | Wait for a live delivery or reset the demo. |
 
 Run `npm test` inside `backend/` and `frontend/` for the application tests. Run `npm run build` inside `frontend/` for the production build, using the desired frontend environment settings.
