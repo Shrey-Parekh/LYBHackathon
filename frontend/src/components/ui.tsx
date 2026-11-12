@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { animate } from "motion/react";
 import { ArrowClockwise, CheckCircle, Circle, WarningCircle, WarningOctagon, CellSignalSlash } from "@phosphor-icons/react";
 import type { Confidence, RiskLevel, ShipmentStatus } from "../api/contract";
 import { CONFIDENCE_WORD, RISK_WORD, STATUS_WORD } from "../lib/risk";
@@ -10,7 +11,7 @@ type Variant = "primary" | "secondary" | "ghost";
 type Size = "sm" | "md" | "lg" | "xl";
 
 const VARIANT: Record<Variant, string> = {
-  primary: "bg-accent text-on-accent hover:bg-accent-hover border border-accent hover:border-accent-hover disabled:bg-sunken disabled:border-line-strong disabled:text-ink-2",
+  primary: "btn-primary bg-accent text-on-accent hover:bg-accent-hover border border-accent hover:border-accent-hover disabled:bg-sunken disabled:border-line-strong disabled:text-ink-2",
   secondary: "bg-surface text-ink border border-line-strong hover:bg-sunken disabled:text-muted",
   ghost: "bg-transparent text-ink-2 border border-transparent hover:bg-sunken disabled:text-muted",
 };
@@ -194,5 +195,35 @@ export function KeyValue({ label, children }: { label: string; children: ReactNo
       <dt className="text-meta text-muted">{label}</dt>
       <dd className="tnum truncate text-body font-medium text-ink">{children}</dd>
     </div>
+  );
+}
+
+/**
+  Counts a whole number up from its previous value (from 0 on first show). Writes straight to the DOM,
+  not React state, so it never re-renders the tree. Reduced motion shows the final number at once.
+*/
+export function CountUp({ value, className = "" }: { value: number; className?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const from = useRef(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      el.textContent = String(value);
+      from.current = value;
+      return;
+    }
+    const controls = animate(from.current, value, {
+      duration: 0.8,
+      ease: [0.22, 1, 0.36, 1],
+      onUpdate: (v) => (el.textContent = String(Math.round(v))),
+    });
+    from.current = value;
+    return () => controls.stop();
+  }, [value]);
+  return (
+    <span ref={ref} className={`tnum ${className}`}>
+      {value}
+    </span>
   );
 }

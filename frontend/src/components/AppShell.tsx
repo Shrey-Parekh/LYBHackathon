@@ -78,7 +78,7 @@ function CoordinatorShell() {
       <SkipLink />
       {/* Rail (desktop) */}
       <aside className="sticky top-0 hidden h-dvh flex-col bg-rail text-rail-ink md:flex">
-        <NavLink to="/coordinator" className="flex items-center gap-2.5 px-5 pb-6 pt-5 font-semibold tracking-tight text-[#eef2ef]">
+        <NavLink to="/coordinator" className="flex items-center gap-2.5 px-5 pb-6 pt-5 font-semibold tracking-tight text-[#f2f7fb]">
           <Mark />
           <span className="leading-tight">
             Plant X
@@ -105,7 +105,7 @@ function CoordinatorShell() {
                       )}
                       {isActive && <motion.span layoutId="rail-bar" className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-rail-accent" aria-hidden />}
                       <n.icon size={18} weight={isActive ? "fill" : "regular"} aria-hidden className={`relative ${isActive ? "text-rail-accent" : "text-rail-muted group-hover:text-rail-ink"}`} />
-                      <span className={`relative ${isActive ? "text-[#eef2ef]" : "text-rail-ink group-hover:text-[#eef2ef]"}`}>{n.label}</span>
+                      <span className={`relative ${isActive ? "text-[#f2f7fb]" : "text-rail-ink group-hover:text-[#f2f7fb]"}`}>{n.label}</span>
                     </>
                     );
                   }}
@@ -116,7 +116,7 @@ function CoordinatorShell() {
         </nav>
         <div className="space-y-3 border-t border-rail-2 px-5 py-4">
           <div>
-            <p className="text-body font-medium text-[#eef2ef]">{session.user.name}</p>
+            <p className="text-body font-medium text-[#f2f7fb]">{session.user.name}</p>
             <p className="text-meta text-rail-muted">Logistics coordinator</p>
           </div>
           <div className="flex items-center gap-1">
@@ -133,7 +133,7 @@ function CoordinatorShell() {
         <header className="bg-rail text-rail-ink md:hidden">
           <div className="flex h-14 items-center gap-2 px-4">
             <Mark />
-            <span className="font-semibold text-[#eef2ef]">Plant X</span>
+            <span className="font-semibold text-[#f2f7fb]">Plant X</span>
             <div className="ml-auto flex items-center gap-1">
               <ThemeToggle dark />
               <button type="button" onClick={signOut} aria-label="Sign out" className="inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-rail-2">
@@ -273,10 +273,10 @@ function StreamIndicator() {
 export function Mark({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-      <rect width="32" height="32" rx="8" fill="#2f45c8" />
+      <rect width="32" height="32" rx="8" fill="#17794a" />
       <path d="M7 22c4 0 5-6 9-6s5-6 9-6" stroke="#ffffff" strokeWidth="2.6" fill="none" strokeLinecap="round" />
       <circle cx="7" cy="22" r="2.4" fill="#ffffff" />
-      <circle cx="25" cy="10" r="2.4" fill="#9fb0ff" />
+      <circle cx="25" cy="10" r="2.4" fill="#bfe0f4" />
     </svg>
   );
 }

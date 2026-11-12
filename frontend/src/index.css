@@ -1,73 +1,80 @@
 @import "tailwindcss";
-@import "@fontsource-variable/geist";
-@import "@fontsource-variable/geist-mono";
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/figtree";
+@import "@fontsource-variable/jetbrains-mono";
 @import "leaflet/dist/leaflet.css";
 
 /*
   Design tokens. Every colour, size, radius and duration used by the app comes from here.
-  Palette: muted sage-slate neutrals, one contrasting accent (cobalt) for the primary action, focus and
-  selection. Muted green / amber / red are reserved for risk and always come with an icon and a word.
+  Palette: powder-blue base, pale-white surfaces, one green accent for the primary action, focus and
+  selection. Risk keeps its own tones (blue "On schedule", amber "At risk", red "Delayed") and always
+  comes with an icon and a word, so the green accent is never read as a risk level.
   Light is the default (projectors wash out dark themes); dark is a manual toggle (data-theme="dark").
   Contrast of every text/background pair is at least 4.5:1 in both themes (docs/design-tokens.md).
-  Radius rule: badges 6px, controls 8px, panels 14px.
+  Radius rule: badges 6px, controls 10px, panels 16px.
 */
 :root {
-  --canvas: #e8ece9;
-  --surface: #f6f8f6;
+  --canvas: #d3e4f1;
+  --surface: #fbfcfa;
   --raised: #ffffff;
-  --sunken: #dce2de;
-  --line: #cbd3ce;
-  --line-strong: #a9b4ae;
-  --ink: #18211e;
-  --ink-2: #34403b;
-  --muted: #56635d;
-  --accent: #2f45c8;
-  --accent-hover: #2537a6;
-  --accent-soft: #dfe4f7;
+  --sunken: #e6eff6;
+  --line: #c4d6e4;
+  --line-strong: #9db6ca;
+  --ink: #14263a;
+  --ink-2: #2b4258;
+  --muted: #4b6074;
+  --accent: #17794a;
+  --accent-hover: #11603a;
+  --accent-soft: #dcf0e3;
   --on-accent: #ffffff;
-  --rail: #17201d;
-  --rail-2: #212c28;
-  --rail-ink: #c9d3ce;
-  --rail-muted: #8a9690;
-  --rail-accent: #9fb0ff;
-  --low: #2e6a4c;
-  --low-soft: #d6e8dc;
+  --rail: #13283c;
+  --rail-2: #1d3850;
+  --rail-ink: #d6e4ef;
+  --rail-muted: #93abc0;
+  --rail-accent: #7fd6a4;
+  --low: #24577c;
+  --low-soft: #dbe8f3;
   --medium: #7a4c00;
-  --medium-soft: #f1e2c2;
+  --medium-soft: #f6e7c6;
   --high: #9a3228;
-  --high-soft: #f2d8d3;
-  --chart-ink: #34403b;
+  --high-soft: #f6dcd7;
+  --chart-ink: #2b4258;
+  --panel-shadow: 0 1px 2px rgb(20 38 58 / 0.05), 0 10px 30px -14px rgb(20 38 58 / 0.22);
+  --glow: rgb(255 255 255 / 0.6);
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --canvas: #111714;
-  --surface: #18201c;
-  --raised: #1d2622;
-  --sunken: #212b26;
-  --line: #2c3832;
-  --line-strong: #44524b;
-  --ink: #e6ece8;
-  --ink-2: #c3cec8;
-  --muted: #93a29a;
-  --accent: #9aaaff;
-  --accent-hover: #b4c0ff;
-  --accent-soft: #232c55;
-  --on-accent: #0f1530;
-  --rail: #0c110f;
-  --rail-2: #161e1b;
-  --low: #8ccba5;
-  --low-soft: #1c3327;
+  --canvas: #0f1c28;
+  --surface: #152535;
+  --raised: #1a2d40;
+  --sunken: #1b3045;
+  --line: #24394d;
+  --line-strong: #3a5570;
+  --ink: #e3edf5;
+  --ink-2: #c2d3e2;
+  --muted: #93a8bb;
+  --accent: #6fd19a;
+  --accent-hover: #8fe0b2;
+  --accent-soft: #15372a;
+  --on-accent: #06210f;
+  --rail: #0a1520;
+  --rail-2: #142636;
+  --low: #9cc6e8;
+  --low-soft: #16324a;
   --medium: #e3b66a;
   --medium-soft: #3a2e15;
   --high: #f0a096;
   --high-soft: #3d201c;
-  --chart-ink: #c3cec8;
+  --chart-ink: #c2d3e2;
+  --panel-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px -16px rgb(0 0 0 / 0.6);
+  --glow: rgb(140 190 230 / 0.08);
   color-scheme: dark;
 }
 
 @theme inline {
-  --font-sans: "Geist Variable", system-ui, sans-serif;
-  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+  --font-sans: "Figtree Variable", system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Figtree Variable", sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
 
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
@@ -111,8 +118,8 @@
   --text-driver--line-height: 3rem;
 
   --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
 
   --duration-fast: 150ms;
   --duration-base: 220ms;
@@ -122,12 +129,32 @@
 
 @layer base {
   html {
-    background: var(--canvas);
+    background-color: var(--canvas);
+    /* Soft daylight from the top of the page; fixed, so it never repaints while scrolling */
+    background-image:
+      radial-gradient(1100px 520px at 12% -12%, var(--glow), transparent 62%),
+      radial-gradient(900px 480px at 100% -8%, var(--glow), transparent 60%);
+    background-attachment: fixed;
     color: var(--ink);
     font-family: var(--font-sans);
     font-size: 16px;
     -webkit-font-smoothing: antialiased;
-    font-feature-settings: "ss01";
+  }
+  /* Display face for headings: Bricolage Grotesque, tight tracking */
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    font-optical-sizing: auto;
+  }
+  /* Fine grain over the whole page: fixed, pointer-events none, never on a scrolling layer */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1500;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   /* Theme switch fades colours rather than snapping (never on first paint). */
   html.theme-anim, html.theme-anim * {
@@ -272,4 +299,31 @@ dialog.ct-dialog::backdrop {
 }
 @media (prefers-reduced-motion: reduce) {
   .journey-fill, .journey-truck { transition: none; }
+}
+
+/* Panels float slightly off the powder-blue page with a blue-tinted shadow */
+.rounded-lg.border-line.bg-surface,
+.rounded-lg.border-line.bg-raised {
+  box-shadow: var(--panel-shadow);
+}
+/* Interactive panels lift on hover */
+a.rounded-lg.bg-surface,
+button.rounded-lg.bg-surface {
+  transition: transform var(--duration-base) var(--ease-out-quiet), box-shadow var(--duration-base) var(--ease-out-quiet), border-color var(--duration-base) var(--ease-out-quiet);
+}
+a.rounded-lg.bg-surface:hover,
+button.rounded-lg.bg-surface:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgb(20 38 58 / 0.06), 0 18px 36px -18px rgb(20 38 58 / 0.35);
+}
+/* Primary button: inner highlight and a soft green glow on hover */
+.btn-primary {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 1px 2px rgb(20 38 58 / 0.15);
+}
+.btn-primary:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 10px 22px -10px var(--accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  a.rounded-lg.bg-surface:hover, button.rounded-lg.bg-surface:hover, .btn-primary:not(:disabled):hover { transform: none; }
 }
