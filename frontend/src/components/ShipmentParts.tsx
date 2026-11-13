@@ -1,7 +1,7 @@
 import { Check, Truck, WarningCircle, WarningOctagon } from "@phosphor-icons/react";
 import type { Alert, EtaSnapshot, Milestone, RouteDetail, ShipmentDetail } from "../api/contract";
 import { RISK_WORD, STATUS_WORD } from "../lib/risk";
-import { clock, clockTz } from "../lib/time";
+import { clock, clockTz, dateTimeTz } from "../lib/time";
 import { Button, RiskBadge } from "./ui";
 import type { MapMarker, MapRoute } from "./ShipmentMap";
 
@@ -139,6 +139,24 @@ export function JourneyBar({ from, to, progressKm, totalKm, status }: { from: st
         <span className="tnum whitespace-nowrap font-medium text-ink-2">{done ? "Arrived" : progressKm !== null && totalKm ? `km ${Math.round(progressKm)} of ${totalKm}` : "Not departed"}</span>
         <span className="text-right">{to}</span>
       </div>
+    </div>
+  );
+}
+
+/** Orders that were added to this truck at dispatch (same customer, same delivery point). */
+export function ExtraOrders({ shipment }: { shipment: { order: { id: string }; extra_orders?: { id: string; product: string; quantity_t: number; promised_by: string }[] } }) {
+  if (!shipment.extra_orders?.length) return null;
+  return (
+    <div className="border-t border-line px-5 py-4">
+      <h3 className="text-meta font-semibold text-ink">Also on this truck</h3>
+      <ul className="mt-1 space-y-1">
+        {shipment.extra_orders.map((o) => (
+          <li key={o.id} className="tnum text-body text-ink-2">
+            <span className="font-medium text-ink">{o.id}</span> · {o.quantity_t} t {o.product} · promised {dateTimeTz(o.promised_by)}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-meta text-muted">Added to the truck already planned for order {shipment.order.id}; one trip instead of two.</p>
     </div>
   );
 }

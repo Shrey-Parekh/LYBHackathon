@@ -12,7 +12,7 @@ export type StopKind = "BREAK" | "FUEL" | "CHARGING" | "OTHER" | "UNPLANNED";
 export interface Stop { id: string; kind: StopKind; source: "DRIVER" | "DETECTED"; started_at: string; ended_at: string | null; at_km: number | null }
 export interface Driving { driving_min_since_break: number; limit_min: number; break_min: number; break_due_at: string | null; overdue: boolean; on_stop: Stop | null }
 export interface Checkin { id: string; shipment_id: string; requested_by_name: string; requested_at: string; message: string | null; responded_at: string | null; response: "OK" | "PROBLEM" | null; response_note: string | null }
-export interface DocumentMeta { id: string; shipment_id: string; kind: "DELIVERY_PHOTO" | "INVOICE"; mime: string; file_name: string; size_bytes: number; uploaded_by_name: string; uploaded_at: string; verified_by_name: string | null; verified_at: string | null }
+export interface DocumentMeta { id: string; shipment_id: string; kind: "DELIVERY_PHOTO"; mime: string; file_name: string; size_bytes: number; uploaded_by_name: string; uploaded_at: string; verified_by_name: string | null; verified_at: string | null }
 export interface LogEntry { at: string; kind: "MILESTONE" | "DISRUPTION" | "STOP" | "CHECKIN" | "DOCUMENT" | "ALERT" | "DECISION"; title: string; detail: string | null; by: string | null }
 
 const k = {

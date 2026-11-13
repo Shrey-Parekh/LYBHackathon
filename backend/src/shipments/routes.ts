@@ -33,6 +33,8 @@ import {
   type SnapshotRow,
 } from './repo';
 import { RoadConditions } from './roadConditions';
+import { invoiceMeta } from '../invoices/routes';
+import { extraOrders } from '../orders/plan';
 
 const IdParams = z.object({ id: z.string().min(1).max(40) });
 const ALL = ['COORDINATOR', 'DRIVER', 'CUSTOMER'] as const;
@@ -73,6 +75,8 @@ export function shipmentSummary(ctx: Ctx, user: AuthUser, s: ShipmentRow) {
     status: s.status,
     active_route_id: s.active_route_id,
     promised_by: s.agreed_delivery_by,
+    original_promised_by: s.original_promised_by,
+    arrived_at: s.arrived_at,
     last_position: lastPosition(s),
     current_eta: snap ? snapshotToApi(snap) : null,
     open_alert: alert ? alertToApi(alert) : null,
@@ -147,6 +151,9 @@ export function shipmentDetail(ctx: Ctx, user: AuthUser, s: ShipmentRow) {
       cleared_at: d.cleared_at,
     })),
     ...(ctx.liveRouteDemo?.isLiveShipment(s.id) ? { live_traffic: ctx.liveRouteDemo.traffic(s.active_route_id, s.last_progress_km) } : {}),
+    ...(user.role !== 'DRIVER' ? { invoice: invoiceMeta(db, s.id) } : {}),
+    // Orders added to this truck at dispatch; quantity_t above already includes them.
+    extra_orders: extraOrders(db, s.id),
   };
 }
 

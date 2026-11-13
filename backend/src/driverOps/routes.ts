@@ -7,7 +7,7 @@ import { audit } from '../audit';
 import type { AuthUser } from '../auth/policy';
 import type { Ctx } from '../ctx';
 import { nextSeq, type Db } from '../db/db';
-import { ApiError, forbidden, notFound } from '../http/errors';
+import { ApiError, notFound } from '../http/errors';
 import { defineRoute, type RegisteredRoute } from '../http/route';
 import { ErrorResponse } from '../http/schemas';
 import { coordinatorIds, customerUserIds, type NotificationKind } from '../notify/notifier';
@@ -27,7 +27,6 @@ const CHECKPOINT_RADIUS_KM = 1;
 /** Upload limit. Base64 adds a third, so the body limit in app.ts is set above this. */
 export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const PHOTO_MIME = ['image/jpeg', 'image/png', 'image/webp'];
-const INVOICE_MIME = [...PHOTO_MIME, 'application/pdf'];
 
 const IdParams = z.object({ id: z.string().min(1).max(60) });
 const STOP_WORD: Record<string, string> = { BREAK: 'rest break', FUEL: 'fuel stop', CHARGING: 'charging stop', OTHER: 'stop', UNPLANNED: 'unplanned stop' };
@@ -58,7 +57,7 @@ const Checkin = z.object({
 const DocumentMeta = z.object({
   id: z.string(),
   shipment_id: z.string(),
-  kind: z.enum(['DELIVERY_PHOTO', 'INVOICE']),
+  kind: z.literal('DELIVERY_PHOTO'),
   mime: z.string(),
   file_name: z.string(),
   size_bytes: z.number().int(),
@@ -383,14 +382,14 @@ export function registerDriverOpsRoutes(app: FastifyInstance, ctx: Ctx, reg: Reg
     handler: ({ user, params }) => ({ status: 200, body: docsOf(visible(ctx, user!, params.id).id) }),
   });
 
-  defineRoute<{ id: string }, Record<string, never>, { kind: 'DELIVERY_PHOTO' | 'INVOICE'; mime: string; file_name: string; data_base64: string }>(app, ctx, reg, {
+  defineRoute<{ id: string }, Record<string, never>, { kind: 'DELIVERY_PHOTO'; mime: string; file_name: string; data_base64: string }>(app, ctx, reg, {
     method: 'POST',
     url: '/shipments/:id/documents',
     roles: ['COORDINATOR', 'DRIVER'],
-    summary: 'Upload the delivery photo (driver, on arrival) or the invoice (coordinator). Up to 5 MB',
+    summary: 'Upload the delivery photo (driver on arrival, or coordinator). Up to 5 MB. Invoices use /shipments/:id/invoice',
     params: IdParams,
     body: z.object({
-      kind: z.enum(['DELIVERY_PHOTO', 'INVOICE']),
+      kind: z.literal('DELIVERY_PHOTO'),
       mime: z.string().max(60),
       file_name: z.string().trim().min(1).max(120),
       data_base64: z.string().min(8),
@@ -398,12 +397,10 @@ export function registerDriverOpsRoutes(app: FastifyInstance, ctx: Ctx, reg: Reg
     responses: { 201: DocumentMeta, 403: ErrorResponse, 404: ErrorResponse, 409: ErrorResponse, 422: ErrorResponse },
     handler: ({ user, params, body }) => {
       const s = visible(ctx, user!, params.id);
-      if (body.kind === 'INVOICE' && user!.role !== 'COORDINATOR') throw forbidden('Only a coordinator uploads the invoice');
-      if (body.kind === 'DELIVERY_PHOTO' && user!.role === 'DRIVER' && s.status !== 'ARRIVED' && s.status !== 'DELIVERED') {
+      if (user!.role === 'DRIVER' && s.status !== 'ARRIVED' && s.status !== 'DELIVERED') {
         throw new ApiError(409, 'NOT_ARRIVED', 'Take the delivery photo once you have arrived');
       }
-      const allowed = body.kind === 'INVOICE' ? INVOICE_MIME : PHOTO_MIME;
-      if (!allowed.includes(body.mime)) throw new ApiError(422, 'UNSUPPORTED_FILE', body.kind === 'INVOICE' ? 'Use a PDF or an image' : 'Use a JPEG, PNG or WebP photo');
+      if (!PHOTO_MIME.includes(body.mime)) throw new ApiError(422, 'UNSUPPORTED_FILE', 'Use a JPEG, PNG or WebP photo');
       const bytes = Buffer.from(body.data_base64, 'base64');
       if (bytes.length === 0) throw new ApiError(422, 'EMPTY_FILE', 'The file is empty');
       if (bytes.length > MAX_FILE_BYTES) throw new ApiError(422, 'FILE_TOO_LARGE', 'The file is larger than 5 MB');
@@ -417,13 +414,9 @@ export function registerDriverOpsRoutes(app: FastifyInstance, ctx: Ctx, reg: Reg
         );
         audit(db, now, user!.id, 'DOCUMENT_UPLOADED', 'document', id, { kind: body.kind, size_bytes: bytes.length });
         const customers = customerUserIds(db, s.customer_id);
-        if (body.kind === 'DELIVERY_PHOTO') {
-          const msg = `${user!.name} added the delivery photo at ${istClock(now)}.`;
-          notifyAll(ctx, coordinatorIds(db), now, s, 'DELIVERY_PHOTO', `${s.id}: delivery photo to verify`, msg, hints);
-          notifyAll(ctx, customers, now, s, 'DELIVERY_PHOTO', `Order ${s.order_id}: delivery photo`, `${msg} You can view it on the order.`, hints);
-        } else {
-          notifyAll(ctx, customers, now, s, 'INVOICE', `Order ${s.order_id}: invoice ready`, 'The invoice for this order is ready to download.', hints);
-        }
+        const msg = `${user!.name} added the delivery photo at ${istClock(now)}.`;
+        notifyAll(ctx, coordinatorIds(db), now, s, 'DELIVERY_PHOTO', `${s.id}: delivery photo to verify`, msg, hints);
+        notifyAll(ctx, customers, now, s, 'DELIVERY_PHOTO', `Order ${s.order_id}: delivery photo`, `${msg} You can view it on the order.`, hints);
         hints.push(shipmentHint(s, 'document'));
         return id;
       });
@@ -514,9 +507,11 @@ export function registerDriverOpsRoutes(app: FastifyInstance, ctx: Ctx, reg: Reg
         if (c.responded_at) out.push({ at: c.responded_at, kind: 'CHECKIN', title: c.response === 'OK' ? 'Driver checked in: all right' : 'Driver checked in: problem', detail: c.response_note, by: driverName });
       }
       for (const d of docsOf(s.id)) {
-        out.push({ at: d.uploaded_at, kind: 'DOCUMENT', title: d.kind === 'INVOICE' ? 'Invoice uploaded' : 'Delivery photo added', detail: d.file_name, by: d.uploaded_by_name });
+        out.push({ at: d.uploaded_at, kind: 'DOCUMENT', title: 'Delivery photo added', detail: d.file_name, by: d.uploaded_by_name });
         if (d.verified_at) out.push({ at: d.verified_at, kind: 'DOCUMENT', title: 'Delivery verified from the photo', detail: null, by: d.verified_by_name });
       }
+      const inv = db.prepare('SELECT filename, uploaded_by, uploaded_at FROM invoices WHERE shipment_id = ?').get(s.id) as { filename: string; uploaded_by: string; uploaded_at: string } | undefined;
+      if (inv) out.push({ at: inv.uploaded_at, kind: 'DOCUMENT', title: 'Invoice ready', detail: inv.filename, by: nameOf(db, inv.uploaded_by) });
       const alerts = db.prepare('SELECT opened_at, level, title FROM alerts WHERE shipment_id = ? ORDER BY opened_at').all(s.id) as { opened_at: string; level: string; title: string }[];
       for (const a of alerts) out.push({ at: a.opened_at, kind: 'ALERT', title: `Alert opened (${a.level.toLowerCase()})`, detail: a.title, by: 'Control tower' });
       const decisions = db.prepare('SELECT decided_at, decided_by, option_type, note FROM decisions WHERE shipment_id = ? ORDER BY decided_at').all(s.id) as { decided_at: string; decided_by: string; option_type: string; note: string | null }[];

@@ -21,10 +21,11 @@ export const NotificationKind = z.enum([
   'DELIVERED',
   'DELIVERY_PHOTO',
   'DELIVERY_VERIFIED',
-  'INVOICE',
   'CHECKIN_REQUEST',
   'CHECKIN_REPLY',
   'DRIVER_STOP',
+  'INVOICE_READY',
+  'ORDER_CONFIRMED',
 ]);
 
 export const ErrorResponse = z.object({
@@ -232,6 +233,9 @@ export const ShipmentSummary = z.object({
   status: ShipmentStatus,
   active_route_id: z.string(),
   promised_by: IsoTime,
+  // For finished shipments, which have no live ETA: when the truck arrived, and the promise on-time is judged against.
+  original_promised_by: IsoTime,
+  arrived_at: IsoTime.nullable(),
   last_position: Position.nullable(),
   current_eta: EtaSnapshot.nullable(),
   open_alert: Alert.nullable(),
@@ -260,6 +264,13 @@ export const RoadConditionsResponse = z.object({
     id: z.string(), category: z.string(), description: z.string().nullable(), roads: z.array(z.string()),
     delay_min: z.number().int().nullable(), at_km: z.number(), location: z.tuple([z.number(), z.number()]),
   })),
+});
+
+export const InvoiceMeta = z.object({
+  filename: z.string(),
+  size_bytes: z.number().int().positive(),
+  uploaded_at: IsoTime,
+  uploaded_by_name: z.string(),
 });
 
 export const ShipmentDetail = z.object({
@@ -296,6 +307,9 @@ export const ShipmentDetail = z.object({
   open_alert: Alert.nullable(),
   active_disruptions: z.array(Disruption),
   live_traffic: LiveTraffic.optional(),
+  // Coordinators and the customer only; absent for drivers. null until a coordinator uploads one.
+  invoice: InvoiceMeta.nullable().optional(),
+  extra_orders: z.array(z.object({ id: z.string(), product: z.string(), quantity_t: z.number(), promised_by: IsoTime })),
 });
 
 export const RouteDetail = z.object({
@@ -484,3 +498,50 @@ export const RouteWeatherResponse = z.object({
 });
 
 export const Health = z.object({ status: z.literal('ok'), demo_mode: z.boolean(), now: IsoTime });
+
+// ---- Order-tracking assistant (Groq) ----
+export const AssistantStatus = z.object({ configured: z.boolean(), provider: z.literal('Groq'), model: z.string() });
+export const AssistantAsk = z.object({
+  question: z.string().trim().min(1).max(500),
+  // Earlier turns of this conversation, kept by the browser. Capped so a request stays small.
+  history: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().min(1).max(2000) })).max(10).default([]),
+});
+export type AssistantAsk = z.infer<typeof AssistantAsk>;
+export const AssistantAnswer = z.object({ answer: z.string(), provider: z.literal('Groq'), model: z.string() });
+
+// ---- New orders and truck choice (orders/plan.ts) ----
+export const NewOrderForm = z.object({
+  now: IsoTime,
+  customers: z.array(z.object({ id: z.string(), name: z.string(), deliver_to: z.string().nullable() })),
+  products: z.array(z.string()),
+});
+export const OrderDraft = z.object({
+  customer_id: z.string().min(1).max(40),
+  product: z.string().trim().min(1).max(80),
+  quantity_t: z.number().positive().max(40),
+  promised_by: IsoTime,
+});
+export type OrderDraft = z.infer<typeof OrderDraft>;
+export const OrderCreate = OrderDraft.extend({ option_id: z.string().min(1).max(60) });
+export type OrderCreate = z.infer<typeof OrderCreate>;
+export const TruckOption = z.object({
+  id: z.string(),
+  type: z.enum(['ADD_TO_TRUCK', 'NEW_TRUCK']),
+  label: z.string(),
+  feasible: z.boolean(),
+  infeasible_reason: z.string().nullable(),
+  recommended: z.boolean(),
+  shipment_id: z.string().nullable(),
+  vehicle_reg: z.string().nullable(),
+  transporter_name: z.string().nullable(),
+  capacity_t: z.number().nullable(),
+  load_after_t: z.number().nullable(),
+  spare_after_t: z.number().nullable(),
+  planned_departure: IsoTime.nullable(),
+  eta: IsoTime.nullable(),
+  margin_min: z.number().nullable(),
+  km_saved: z.number().nullable(),
+  cost_saved_inr: z.number().nullable(),
+});
+export const OrderPlan = z.object({ options: z.array(TruckOption), recommended_option_id: z.string().nullable() });
+export const OrderCreated = z.object({ order_id: z.string(), shipment_id: z.string(), option: TruckOption });

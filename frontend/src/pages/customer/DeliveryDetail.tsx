@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router";
-import { ArrowLeft, DownloadSimple, ShieldCheck } from "@phosphor-icons/react";
+import { ArrowLeft, ShieldCheck } from "@phosphor-icons/react";
 import { useEtaHistory, useNotifications, useShipment } from "../../api/queries";
 import { useRoutes } from "../../api/useShipmentRoutes";
 import { ApiError } from "../../api/client";
@@ -7,7 +7,8 @@ import { Card, CardHeader, EmptyState, ErrorNote, KeyValue, Loading, Skeleton, S
 import { EtaPanel } from "../../components/EtaPanel";
 import { ShipmentRoadMap } from "../../components/ShipmentRoadMap";
 import { LiveTrafficPanel } from "../../components/LiveTrafficPanel";
-import { JourneyBar, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
+import { InvoiceCard } from "../../components/InvoiceCard";
+import { ExtraOrders, JourneyBar, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
 import { clock, clockTz, dateTimeTz } from "../../lib/time";
 import type { ShipmentDetail } from "../../api/contract";
 import { useDocuments } from "../../api/ops";
@@ -119,7 +120,10 @@ export function DeliveryDetail() {
           <KeyValue label="Original promise">{clockTz(s.order.original_promised_by)}</KeyValue>
           <KeyValue label="Agreed delivery">{clockTz(s.order.agreed_delivery_by)}</KeyValue>
         </dl>
+        <ExtraOrders shipment={s} />
       </Card>
+
+      <InvoiceCard shipment={s} />
 
       <Card aria-labelledby="notes-h">
         <CardHeader title="Updates we sent you" id="notes-h" />
@@ -194,41 +198,29 @@ function progressPct(s: ShipmentDetail) {
   return total > 0 ? Math.round((done / total) * 100) : 0;
 }
 
-/** Delivery photo and invoice, once Plant X has them. Hidden until there is something to show. */
+/** Delivery photo, once the driver has sent it. Hidden until then. The invoice is InvoiceCard. */
 function Paperwork({ s }: { s: ShipmentDetail }) {
   const docs = useDocuments(s.id);
   const photo = docs.data?.find((d) => d.kind === "DELIVERY_PHOTO");
-  const invoice = docs.data?.find((d) => d.kind === "INVOICE");
   const thumb = useDocumentUrl(photo?.id);
-  if (!photo && !invoice) return null;
+  if (!photo) return null;
   return (
     <Card aria-labelledby="paper-h">
-      <CardHeader title="Delivery proof and invoice" id="paper-h" />
-      <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        {photo && (
-          <div>
-            {thumb && (
-              <button type="button" onClick={() => void openDocument(photo)} className="block w-full overflow-hidden rounded-md border border-line" aria-label="Open the delivery photo full size">
-                <img src={thumb} alt={`Delivery photo for order ${s.order.id}`} className="max-h-56 w-full object-cover transition-transform duration-300 hover:scale-[1.02]" />
-              </button>
-            )}
-            <p className="tnum mt-2 text-meta text-muted">Taken at delivery, {clock(photo.uploaded_at)}</p>
-            {photo.verified_at && (
-              <p className="mt-1 flex items-center gap-1.5 text-body text-low">
-                <ShieldCheck size={16} weight="fill" aria-hidden /> Confirmed by Plant X
-              </p>
-            )}
-          </div>
+      <CardHeader title="Delivery photo" id="paper-h" />
+      <div className="grid grid-cols-1 items-end gap-4 p-5 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        {thumb ? (
+          <button type="button" onClick={() => void openDocument(photo)} className="block w-full overflow-hidden rounded-md border border-line" aria-label="Open the delivery photo full size">
+            <img src={thumb} alt={`Delivery photo for order ${s.order.id}`} className="max-h-56 w-full object-cover transition-transform duration-300 hover:scale-[1.02]" />
+          </button>
+        ) : (
+          <div className="h-40 rounded-md bg-sunken" aria-hidden />
         )}
-        {invoice && (
-          <div>
-            <p className="text-body font-semibold">Invoice</p>
-            <p className="mt-1 truncate text-body text-ink-2" title={invoice.file_name}>{invoice.file_name}</p>
-            <button type="button" onClick={() => void openDocument(invoice, true)} className="btn-primary mt-3 inline-flex h-11 items-center gap-2 rounded-md bg-accent px-4 text-body font-semibold text-on-accent transition-colors hover:bg-accent-hover">
-              <DownloadSimple size={18} weight="bold" aria-hidden /> Download invoice
-            </button>
-          </div>
-        )}
+        <div>
+          <p className="tnum text-meta text-muted">Taken at delivery, {clock(photo.uploaded_at)}</p>
+          <p className={`mt-1 flex items-center gap-1.5 text-body ${photo.verified_at ? "text-low" : "text-ink-2"}`}>
+            {photo.verified_at ? <><ShieldCheck size={16} weight="fill" aria-hidden /> Confirmed by Plant X</> : "Plant X is checking it."}
+          </p>
+        </div>
       </div>
     </Card>
   );

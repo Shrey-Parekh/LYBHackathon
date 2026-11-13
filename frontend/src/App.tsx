@@ -13,6 +13,7 @@ import { DriverTrip } from "./pages/driver/DriverTrip";
 import { DriverReport } from "./pages/driver/DriverReport";
 import { MyDeliveries } from "./pages/customer/MyDeliveries";
 import { DeliveryDetail } from "./pages/customer/DeliveryDetail";
+import { NewOrder } from "./pages/coordinator/NewOrder";
 
 /* Routes are exactly DESIGN.md 7.1. Hiding a route here is a convenience; the API enforces access. */
 export function App() {
@@ -25,6 +26,7 @@ export function App() {
         <Route path="shipments/:id" element={<ShipmentDetailPage />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="ledger" element={<Ledger />} />
+        <Route path="orders/new" element={<NewOrder />} />
         {DEMO_MODE && <Route path="demo" element={<DemoControls />} />}
       </Route>
       <Route path="/driver" element={<RequireRole role="DRIVER" />}>

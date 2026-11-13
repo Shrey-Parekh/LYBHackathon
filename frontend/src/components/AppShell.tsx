@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { NavLink, Navigate, Outlet, useLocation } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowsClockwise, ChartBar, ClockCountdown, Notebook, Moon, SignOut, SlidersHorizontal, Sun, WarningDiamond, type Icon } from "@phosphor-icons/react";
+import { ArrowsClockwise, ChartBar, ClockCountdown, Notebook, Moon, PlusCircle, SignOut, SlidersHorizontal, Sun, WarningDiamond, type Icon } from "@phosphor-icons/react";
 import { homeFor, setSession, useSession } from "../auth/session";
 import { useLiveUpdates, useStreamStatus } from "../api/stream";
 import { useDemoState } from "../api/queries";
@@ -13,6 +13,7 @@ import { setTheme, useTheme } from "../lib/theme";
 import { clock } from "../lib/time";
 import { NotificationBell } from "./NotificationBell";
 import { CommandPalette, PaletteTrigger, useCommandPalette } from "./CommandPalette";
+import { AssistantChat } from "./AssistantChat";
 
 export const FICTIONAL_NOTICE = "Fictional demo data. Plant X is a fictional company.";
 
@@ -28,6 +29,7 @@ const COORD_NAV: { to: string; label: string; icon: Icon; end?: boolean }[] = [
   { to: "/coordinator", label: "Attention", icon: WarningDiamond, end: true },
   { to: "/coordinator/dashboard", label: "Performance", icon: ChartBar },
   { to: "/coordinator/ledger", label: "Decision ledger", icon: Notebook },
+  { to: "/coordinator/orders/new", label: "New order", icon: PlusCircle },
   ...(DEMO_MODE ? [{ to: "/coordinator/demo", label: "Demo controls", icon: SlidersHorizontal }] : []),
 ];
 
@@ -158,6 +160,7 @@ function CoordinatorShell() {
           <PaletteTrigger onOpen={() => palette.setOpen(true)} />
           {DEMO_MODE ? <ReplayClock /> : <span className="mr-auto" />}
           <StreamIndicator />
+          <AssistantChat role="COORDINATOR" />
           <NotificationBell />
         </div>
         <Main />
@@ -205,6 +208,7 @@ function SimpleShell({ role }: { role: Role }) {
           <div className="ml-auto flex items-center gap-1">
             {!narrow && <PaletteTrigger onOpen={() => palette.setOpen(true)} />}
             <StreamIndicator />
+            <AssistantChat role={role} />
             <NotificationBell />
             {!narrow && <span className="hidden px-2 text-meta text-muted lg:inline">{session.user.name}</span>}
             <ThemeToggle />

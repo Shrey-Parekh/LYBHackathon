@@ -1,9 +1,9 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "./client";
+import { api, downloadInvoice, uploadInvoice } from "./client";
 import { streamStatus } from "./stream";
 import type {
   Alert, Decision, DecisionRequest, DelayCauseRow, DemoState, EtaSnapshot, ImpactMetrics, Notification, OnTimeRow,
-  EvPreview, LiveDemoArea, LiveRouteSource, LiveRouteState, LiveRouteTrip, LiveShipmentDraft, OptionSet, RoadConditions, RouteDetail, RouteWeatherResponse, ShipmentDetail, ShipmentSummary,
+  AssistantAnswer, AssistantStatus, ChatTurn, InvoiceMeta, NewOrderForm, OrderCreated, OrderDraft, OrderPlan, EvPreview, LiveDemoArea, LiveRouteSource, LiveRouteState, LiveRouteTrip, LiveShipmentDraft, OptionSet, RoadConditions, RouteDetail, RouteWeatherResponse, ShipmentDetail, ShipmentSummary,
 } from "./contract";
 
 /*
@@ -110,6 +110,54 @@ export function useEvPreview() {
 /** Real-world forecast: the backend caches it for 15 minutes, so polling every 5 minutes is plenty. */
 export const useRouteWeather = () =>
   useQuery({ queryKey: keys.weather, staleTime: 5 * 60_000, refetchInterval: 5 * 60_000, queryFn: ({ signal }) => api<RouteWeatherResponse>(`/weather/routes`, { signal }) });
+
+export const useNewOrderForm = (enabled: boolean) =>
+  useQuery({ queryKey: ["order-form"], enabled, queryFn: ({ signal }) => api<NewOrderForm>("/orders/new", { signal }) });
+
+/** Candidate trucks for an order. Changes nothing on the server. */
+export function usePlanOrder() {
+  return useMutation({ mutationFn: (body: OrderDraft) => api<OrderPlan>("/orders/plan", { method: "POST", body }) });
+}
+
+export function useCreateOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: OrderDraft & { option_id: string }) => api<OrderCreated>("/orders", { method: "POST", body }),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ["shipments"] });
+      qc.invalidateQueries({ queryKey: keys.shipment(r.shipment_id) });
+    },
+  });
+}
+
+export function useUploadInvoice(shipmentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => uploadInvoice(shipmentId, file),
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.shipment(shipmentId) }),
+  });
+}
+
+/** The API builds the PDF from the shipment data and the fictional rates in the seed. */
+export function useGenerateInvoice(shipmentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<InvoiceMeta>(`/shipments/${shipmentId}/invoice/generate`, { method: "POST" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.shipment(shipmentId) }),
+  });
+}
+
+export function useDownloadInvoice(shipmentId: string) {
+  return useMutation({ mutationFn: (filename: string) => downloadInvoice(shipmentId, filename) });
+}
+
+/** Is the assistant switched on? Asked once when the chat panel first opens. */
+export const useAssistantStatus = (enabled: boolean) =>
+  useQuery({ queryKey: ["assistant"], enabled, staleTime: Infinity, queryFn: ({ signal }) => api<AssistantStatus>("/assistant", { signal }) });
+
+export function useAskAssistant() {
+  return useMutation({ mutationFn: (body: { question: string; history: ChatTurn[] }) => api<AssistantAnswer>("/assistant/ask", { method: "POST", body }) });
+}
 
 export function useMarkRead() {
   const qc = useQueryClient();

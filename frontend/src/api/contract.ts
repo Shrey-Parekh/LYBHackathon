@@ -140,6 +140,17 @@ export interface ShipmentDetail {
   active_disruptions: Disruption[];
   version: number;
   live_traffic?: LiveTraffic;
+  /** Coordinators and the customer only (absent for drivers); null until one is uploaded. */
+  invoice?: InvoiceMeta | null;
+  /** Orders added to this truck at dispatch; quantity_t already includes them. */
+  extra_orders?: { id: string; product: string; quantity_t: number; promised_by: string }[];
+}
+
+export interface InvoiceMeta {
+  filename: string;
+  size_bytes: number;
+  uploaded_at: string;
+  uploaded_by_name: string;
 }
 
 export interface LiveTraffic {
@@ -232,6 +243,9 @@ export interface ShipmentSummary {
   open_alert: Alert | null;
   version: number;
   live_demo?: boolean;
+  /** When the truck arrived (finished shipments), and the promise that on-time is judged against. */
+  arrived_at?: string | null;
+  original_promised_by?: string;
 }
 
 /** GET /routes/:id — ENTITY (5.2 routes, route_segments, route_alternatives) */
@@ -334,7 +348,7 @@ export interface Notification {
   id: string;
   user_id: string;
   shipment_id: string | null;
-  kind: "RISK_MEDIUM" | "RISK_HIGH" | "DECISION_APPLIED" | "BACK_ON_SCHEDULE" | "TRACKING_LOST" | "DELIVERED" | "DELIVERY_PHOTO" | "DELIVERY_VERIFIED" | "INVOICE" | "CHECKIN_REQUEST" | "CHECKIN_REPLY" | "DRIVER_STOP";
+  kind: "RISK_MEDIUM" | "RISK_HIGH" | "DECISION_APPLIED" | "BACK_ON_SCHEDULE" | "TRACKING_LOST" | "DELIVERED" | "DELIVERY_PHOTO" | "DELIVERY_VERIFIED" | "CHECKIN_REQUEST" | "CHECKIN_REPLY" | "DRIVER_STOP" | "INVOICE_READY" | "ORDER_CONFIRMED";
   title: string;
   body: string;
   created_at: string;
@@ -406,4 +420,62 @@ export interface RouteWeatherResponse {
   fetched_at: string | null;
   error: string | null;
   routes: RouteWeather[];
+}
+
+/* ---- Order-tracking assistant (GET /assistant, POST /assistant/ask) ---- */
+export interface AssistantStatus {
+  configured: boolean;
+  provider: "Groq";
+  model: string;
+}
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+export interface AssistantAnswer {
+  answer: string;
+  provider: "Groq";
+  model: string;
+}
+
+/* ---- New orders and truck choice (GET /orders/new, POST /orders/plan, POST /orders) ---- */
+export interface NewOrderForm {
+  now: string;
+  customers: { id: string; name: string; deliver_to: string | null }[];
+  products: string[];
+}
+export interface OrderDraft {
+  customer_id: string;
+  product: string;
+  quantity_t: number;
+  promised_by: string;
+}
+export interface TruckOption {
+  id: string;
+  type: "ADD_TO_TRUCK" | "NEW_TRUCK";
+  label: string;
+  feasible: boolean;
+  infeasible_reason: string | null;
+  recommended: boolean;
+  shipment_id: string | null;
+  vehicle_reg: string | null;
+  transporter_name: string | null;
+  capacity_t: number | null;
+  load_after_t: number | null;
+  spare_after_t: number | null;
+  planned_departure: string | null;
+  eta: string | null;
+  /** Minutes between the ETA and the order's promise; negative means late. */
+  margin_min: number | null;
+  km_saved: number | null;
+  cost_saved_inr: number | null;
+}
+export interface OrderPlan {
+  options: TruckOption[];
+  recommended_option_id: string | null;
+}
+export interface OrderCreated {
+  order_id: string;
+  shipment_id: string;
+  option: TruckOption;
 }

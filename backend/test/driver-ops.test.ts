@@ -90,14 +90,6 @@ describe('documents', () => {
     expect(file.headers['content-type']).toBe('image/png');
     expect((await t.req('GET', '/shipments/SHP-1001/documents', await t.login(CUST2))).status).toBe(404);
   });
-
-  it('invoice: coordinator only, PDF or image', async () => {
-    const inv = { kind: 'INVOICE', mime: 'application/pdf', file_name: 'INV-5001.pdf', data_base64: Buffer.from('%PDF-1.4 fictional').toString('base64') };
-    expect((await t.req('POST', '/shipments/SHP-1001/documents', d, inv)).status).toBe(403);
-    expect((await t.req('POST', '/shipments/SHP-1001/documents', c, { ...inv, mime: 'text/html' })).status).toBe(422);
-    expect((await t.req('POST', '/shipments/SHP-1001/documents', c, inv)).status).toBe(201);
-    expect(await kinds(await t.login(CUST1))).toContain('INVOICE');
-  });
 });
 
 describe('trip log', () => {

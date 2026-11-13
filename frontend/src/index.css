@@ -165,9 +165,13 @@
     transition: text-decoration-thickness var(--duration-fast) var(--ease-out-quiet);
   }
   a.link:hover { text-decoration-thickness: 4px; }
-  /* Theme switch fades colours rather than snapping (never on first paint). */
-  html.theme-anim, html.theme-anim * {
-    transition: background-color var(--duration-slow) var(--ease-out-quiet), border-color var(--duration-slow) var(--ease-out-quiet), color var(--duration-slow) var(--ease-out-quiet) !important;
+  /*
+    Theme switch: the browser cross-fades one picture of the old page into the new one (theme.ts).
+    A colour transition on every element made long pages stutter, so there is none.
+  */
+  ::view-transition-old(root), ::view-transition-new(root) {
+    animation-duration: var(--duration-base);
+    animation-timing-function: var(--ease-out-quiet);
   }
   body {
     min-height: 100dvh;

@@ -10,6 +10,8 @@ import { EtaHistory } from "../../components/EtaHistory";
 import { ShipmentRoadMap } from "../../components/ShipmentRoadMap";
 import { LiveTrafficPanel } from "../../components/LiveTrafficPanel";
 import { WeatherPanel } from "../../components/WeatherPanel";
+import { InvoiceCard } from "../../components/InvoiceCard";
+import { ExtraOrders } from "../../components/ShipmentParts";
 import { AlertBanner, MilestoneTimeline, positionText, shipmentLayers } from "../../components/ShipmentParts";
 import { OptionsSection } from "../../components/OptionsSection";
 import { DocumentsCard, DriverCard, TripLog } from "../../components/ShipmentOps";
@@ -131,6 +133,7 @@ export function ShipmentDetailPage() {
           </Card>
           <DriverCard s={s} />
           <DocumentsCard s={s} />
+          <InvoiceCard shipment={s} canUpload />
 
           <Card aria-labelledby="facts-h">
             <CardHeader title="Shipment" id="facts-h" />
@@ -146,8 +149,10 @@ export function ShipmentDetailPage() {
               <KeyValue label="Original promise">{clockTz(s.order.original_promised_by)}</KeyValue>
               <KeyValue label="Agreed delivery">{clockTz(s.order.agreed_delivery_by)}</KeyValue>
             </dl>
+            <ExtraOrders shipment={s} />
           </Card>
           {s.live_traffic && s.status === "IN_TRANSIT" && <WeatherPanel routeId={s.active_route_id} />}
+
         </div>
       </div>
 

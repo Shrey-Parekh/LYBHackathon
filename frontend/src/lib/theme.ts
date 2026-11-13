@@ -22,17 +22,22 @@ let current: Theme = stored();
 if (typeof document !== "undefined") document.documentElement.dataset.theme = current;
 
 export function setTheme(next: Theme) {
-  const root = document.documentElement;
-  root.classList.add("theme-anim");
-  root.dataset.theme = next;
-  current = next;
+  const apply = () => {
+    document.documentElement.dataset.theme = next;
+    current = next;
+    listeners.forEach((l) => l());
+  };
   try {
     localStorage.setItem(KEY, next);
   } catch {
     /* the theme still applies for this visit */
   }
-  window.setTimeout(() => root.classList.remove("theme-anim"), 350);
-  listeners.forEach((l) => l());
+  // One cross-fade of the whole page where the browser supports it; otherwise the colours change at once.
+  // Animating every element's colours instead made pages with many cards lag.
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+  const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (doc.startViewTransition && !reduced) doc.startViewTransition(apply);
+  else apply();
 }
 
 export function useTheme(): Theme {

@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
-import { ChatCircleDots, CheckCircle, DownloadSimple, FilePdf, Image as ImageIcon, PauseCircle, Phone, ShieldCheck, UploadSimple, Warning } from "@phosphor-icons/react";
+import { useState } from "react";
+import { ChatCircleDots, CheckCircle, PauseCircle, Phone, ShieldCheck, Warning } from "@phosphor-icons/react";
 import type { ShipmentDetail } from "../api/contract";
 import {
-  documentUrl, MAX_UPLOAD_BYTES, useCheckins, useDocuments, useDriverContact, useDriving, useRequestCheckin, useTripLog,
-  useUploadDocument, useVerifyDocument, type DocumentMeta, type LogEntry,
+  documentUrl, useCheckins, useDocuments, useDriverContact, useDriving, useRequestCheckin, useTripLog,
+  useVerifyDocument, type DocumentMeta, type LogEntry,
 } from "../api/ops";
 import { fmtDur, useDocumentUrl } from "../pages/driver/TripTools";
 import { clock } from "../lib/time";
@@ -119,38 +119,19 @@ export function DriverCard({ s }: { s: ShipmentDetail }) {
   );
 }
 
-/* ---------------- Paperwork: delivery photo and invoice ---------------- */
+/* ---------------- Delivery proof (the invoice is InvoiceCard) ---------------- */
 
 export function DocumentsCard({ s }: { s: ShipmentDetail }) {
   const docs = useDocuments(s.id);
   const verify = useVerifyDocument(s.id);
-  const upload = useUploadDocument(s.id);
-  const input = useRef<HTMLInputElement>(null);
-  const [err, setErr] = useState<string | null>(null);
   const photo = docs.data?.find((d) => d.kind === "DELIVERY_PHOTO");
-  const invoice = docs.data?.find((d) => d.kind === "INVOICE");
   const thumb = useDocumentUrl(photo?.id);
-
-  async function pickInvoice(f: File | undefined) {
-    if (input.current) input.current.value = "";
-    if (!f) return;
-    setErr(null);
-    if (f.size > MAX_UPLOAD_BYTES) return setErr("The file is larger than 5 MB.");
-    try {
-      await upload.mutateAsync({ kind: "INVOICE", file: f, fileName: f.name });
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "The invoice could not be uploaded.");
-    }
-  }
 
   return (
     <Card aria-labelledby="docs-h">
-      <CardHeader title="Delivery proof and invoice" id="docs-h" />
-      <div className="divide-y divide-line">
+      <CardHeader title="Delivery photo" id="docs-h" />
+      <div>
         <div className="p-5">
-          <p className="flex items-center gap-2 text-body font-semibold">
-            <ImageIcon size={18} weight="bold" aria-hidden /> Delivery photo
-          </p>
           {photo ? (
             <div className="mt-3 space-y-3">
               {thumb && (
@@ -177,29 +158,6 @@ export function DocumentsCard({ s }: { s: ShipmentDetail }) {
           )}
         </div>
 
-        <div className="p-5">
-          <p className="flex items-center gap-2 text-body font-semibold">
-            <FilePdf size={18} weight="bold" aria-hidden /> Invoice
-          </p>
-          {invoice ? (
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              <p className="min-w-0 truncate text-body text-ink-2" title={invoice.file_name}>
-                {invoice.file_name} <span className="text-meta text-muted">({Math.max(1, Math.round(invoice.size_bytes / 1024))} KB, {clock(invoice.uploaded_at)})</span>
-              </p>
-              <button type="button" onClick={() => void openDocument(invoice, true)} className="ct-go inline-flex items-center gap-1 text-meta font-semibold text-accent-ink hover:underline">
-                <DownloadSimple size={14} weight="bold" aria-hidden /> Download
-              </button>
-            </div>
-          ) : (
-            <p className="mt-1 text-body text-muted">Not uploaded. The customer can download it once you add it.</p>
-          )}
-          <Button className="mt-3" disabled={upload.isPending} onClick={() => input.current?.click()}>
-            <UploadSimple size={18} weight="bold" aria-hidden /> {upload.isPending ? "Uploading…" : invoice ? "Replace invoice" : "Upload invoice"}
-          </Button>
-          <input ref={input} type="file" accept="application/pdf,image/*" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => void pickInvoice(e.target.files?.[0])} />
-          {err && <p role="alert" className="mt-2 border-l-4 border-high bg-high-soft px-3 py-2 text-body text-high">{err}</p>}
-          <p className="mt-2 text-meta text-muted">PDF or image, up to 5 MB.</p>
-        </div>
       </div>
     </Card>
   );

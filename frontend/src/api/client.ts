@@ -1,6 +1,7 @@
 import { API_BASE, isMocked } from "../lib/env";
 import { getSession, setSession } from "../auth/session";
 import { mockFetch } from "../mocks/server";
+import type { InvoiceMeta } from "./contract";
 
 /** An error from the API in the DESIGN.md 5.1 shape, or a network failure (status 0). */
 export class ApiError extends Error {
@@ -60,6 +61,42 @@ export async function api<T>(path: string, { method = "GET", body, signal }: Opt
     throw new ApiError(res.status, err?.code ?? `HTTP_${res.status}`, err?.message ?? `Request failed (${res.status})`, err?.details ?? {});
   }
   return data as T;
+}
+
+/** Same error handling as api(), for the two invoice calls that carry a file instead of JSON. */
+async function fileCall(path: string, init: RequestInit): Promise<Response> {
+  let res: Response;
+  try {
+    res = await transport(path)(`${API_BASE}${path}`, { ...init, headers: { ...init.headers, ...authHeaders() } });
+  } catch {
+    throw new ApiError(0, "NETWORK", "Could not reach the server");
+  }
+  if (res.status === 401) setSession(null);
+  if (!res.ok) {
+    const err = (safeJson(await res.text()) as { error?: { code?: string; message?: string } } | null)?.error;
+    throw new ApiError(res.status, err?.code ?? `HTTP_${res.status}`, err?.message ?? `Request failed (${res.status})`);
+  }
+  return res;
+}
+
+/** POST /shipments/:id/invoice: the body is the PDF itself. */
+export async function uploadInvoice(shipmentId: string, file: File): Promise<InvoiceMeta> {
+  const path = `/shipments/${shipmentId}/invoice?filename=${encodeURIComponent(file.name)}`;
+  const res = await fileCall(path, { method: "POST", headers: { "Content-Type": "application/pdf", Accept: "application/json" }, body: file });
+  return (await res.json()) as InvoiceMeta;
+}
+
+/** GET /shipments/:id/invoice. A plain link cannot send the sign-in token, so the file is fetched and then saved. */
+export async function downloadInvoice(shipmentId: string, filename: string): Promise<void> {
+  const res = await fileCall(`/shipments/${shipmentId}/invoice`, { headers: { Accept: "application/pdf" } });
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 function safeJson(text: string): unknown {

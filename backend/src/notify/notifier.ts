@@ -13,10 +13,11 @@ export type NotificationKind =
   | 'DELIVERED'
   | 'DELIVERY_PHOTO'
   | 'DELIVERY_VERIFIED'
-  | 'INVOICE'
   | 'CHECKIN_REQUEST'
   | 'CHECKIN_REPLY'
-  | 'DRIVER_STOP';
+  | 'DRIVER_STOP'
+  | 'INVOICE_READY'
+  | 'ORDER_CONFIRMED';
 
 export interface NewNotification {
   user_id: string;

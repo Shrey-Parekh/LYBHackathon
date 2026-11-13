@@ -1,19 +1,25 @@
-import { useState } from "react";
 import { Link } from "react-router";
-import { ArrowRight, CheckCircle } from "@phosphor-icons/react";
+import { ArrowRight, CaretDown, CheckCircle, WarningCircle } from "@phosphor-icons/react";
 import { useShipments } from "../../api/queries";
 import { useRoutes } from "../../api/useShipmentRoutes";
 import type { ShipmentSummary } from "../../api/contract";
 import { CrossFade, EmptyState, ErrorNote, Loading, RiskBadge, Skeleton, StatusTag } from "../../components/ui";
 import { JourneyBar } from "../../components/ShipmentParts";
-import { clock, clockTz } from "../../lib/time";
+import { clock, clockTz, dateTimeTz, duration as fmtDuration } from "../../lib/time";
 import { useSession } from "../../auth/session";
 
 /*
   Customer: my deliveries (DESIGN.md 7.4). Orders still to arrive come first, as cards with the time,
-  the window and the reason. Delivered orders collapse to a short list: they have no estimate to show.
+  the window and the reason. Delivered orders have no estimate to show, so they sit in a closed "Past deliveries" list with
+  when they arrived and whether that was on time.
 */
 const DONE = new Set(["DELIVERED", "CANCELLED"]);
+
+/** Minutes late against the original promise; 0 or less is on time. null when the arrival time is unknown. */
+export function lateMinutes(s: Pick<ShipmentSummary, "arrived_at" | "original_promised_by">): number | null {
+  if (!s.arrived_at || !s.original_promised_by) return null;
+  return Math.round((Date.parse(s.arrived_at) - Date.parse(s.original_promised_by)) / 60_000);
+}
 
 export function MyDeliveries() {
   const session = useSession();
@@ -22,10 +28,10 @@ export function MyDeliveries() {
   const open = all
     .filter((s) => !DONE.has(s.status))
     .sort((a, b) => (a.current_eta?.eta ?? "~").localeCompare(b.current_eta?.eta ?? "~"));
-  const delivered = all.filter((s) => s.status === "DELIVERED");
+  // Most recent first.
+  const delivered = all.filter((s) => s.status === "DELIVERED").sort((a, b) => (b.arrived_at ?? "").localeCompare(a.arrived_at ?? ""));
   const routes = useRoutes(open.map((s) => s.active_route_id));
   const company = all[0]?.customer_name;
-  const [showAll, setShowAll] = useState(false);
   const moving = open.filter((s) => s.status === "IN_TRANSIT" || s.status === "ARRIVED").length;
 
   return (
@@ -77,32 +83,7 @@ export function MyDeliveries() {
             )}
           </section>
 
-          {delivered.length > 0 && (
-            <section aria-labelledby="done-h" className="mt-10">
-              <h2 id="done-h" className="text-lead font-semibold">
-                Delivered <span className="font-normal text-muted">{delivered.length}</span>
-              </h2>
-              <ul className="mt-3 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
-                {(showAll ? delivered : delivered.slice(0, 5)).map((s) => (
-                  <li key={s.id}>
-                    <Link to={`/customer/shipments/${s.id}`} className="ct-go flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3.5 transition-colors duration-150 hover:bg-raised">
-                      <CheckCircle size={18} weight="bold" aria-hidden className="text-low" />
-                      <span className="text-body font-semibold">Order {s.order_id}</span>
-                      <span className="min-w-0 flex-1 truncate text-body text-ink-2">{s.destination_name}</span>
-                      <span className="inline-flex items-center gap-1 text-meta font-semibold text-accent-ink">
-                        Details <ArrowRight size={13} weight="bold" aria-hidden />
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              {delivered.length > 5 && (
-                <button type="button" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll} className="mt-3 text-body font-semibold text-accent-ink hover:underline">
-                  {showAll ? "Show the latest 5" : `Show all ${delivered.length} delivered orders`}
-                </button>
-              )}
-            </section>
-          )}
+          {delivered.length > 0 && <PastDeliveries past={delivered} />}
         </>
       )}
     </div>
@@ -140,5 +121,46 @@ function DeliveryCard({ s, route }: { s: ShipmentSummary; route: ReturnType<type
         <StatusTag status={s.status} />
       </div>
     </Link>
+  );
+}
+
+function PastDeliveries({ past }: { past: ShipmentSummary[] }) {
+  const onTime = past.filter((s) => (lateMinutes(s) ?? 0) <= 0).length;
+  return (
+    <details className="group mt-10 border-t-2 border-ink">
+      <summary className="flex cursor-pointer list-none items-baseline justify-between gap-3 py-4 [&::-webkit-details-marker]:hidden">
+        <span className="text-lead font-semibold text-ink">
+          Past deliveries{" "}
+          <span className="tnum font-normal text-muted">
+            {past.length} delivered, {onTime} on time
+          </span>
+        </span>
+        <CaretDown size={16} weight="bold" aria-hidden className="shrink-0 self-center text-ink-2 transition-transform duration-200 group-open:rotate-180" />
+      </summary>
+      <ul className="divide-y divide-line border-y border-line">
+        {past.map((s) => {
+          const late = lateMinutes(s);
+          return (
+            <li key={s.id}>
+              <Link to={`/customer/shipments/${s.id}`} className="ct-go flex flex-wrap items-center gap-x-4 gap-y-1 px-2 py-3 transition-colors duration-150 hover:bg-raised">
+                <span className="w-28 shrink-0 text-body font-semibold text-ink">{s.order_id}</span>
+                <span className="tnum min-w-0 flex-1 text-body text-ink-2">{s.arrived_at ? `Delivered ${dateTimeTz(s.arrived_at)}` : "Delivered"}</span>
+                {late !== null &&
+                  (late <= 0 ? (
+                    <span className="inline-flex items-center gap-1 text-meta font-semibold text-low">
+                      <CheckCircle size={16} weight="bold" aria-hidden /> On time
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-meta font-semibold text-medium">
+                      <WarningCircle size={16} weight="bold" aria-hidden /> {fmtDuration(late)} late
+                    </span>
+                  ))}
+                <ArrowRight size={14} weight="bold" aria-hidden className="shrink-0 text-muted" />
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
   );
 }

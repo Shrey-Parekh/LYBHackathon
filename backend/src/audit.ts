@@ -23,7 +23,12 @@ export type AuditAction =
   | 'CHECKIN_REQUESTED'
   | 'CHECKIN_ANSWERED'
   | 'STOP_STARTED'
-  | 'STOP_ENDED';
+  | 'STOP_ENDED'
+  | 'ASSISTANT_ASKED'
+  | 'INVOICE_UPLOADED'
+  | 'INVOICE_GENERATED'
+  | 'INVOICE_DOWNLOADED'
+  | 'ORDER_CREATED';
 
 export function audit(
   db: Db,

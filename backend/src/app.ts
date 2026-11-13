@@ -30,6 +30,9 @@ import { recomputeEta } from './shipments/recompute';
 import type { PendingHint } from './stream/hub';
 import { LiveRouteDemo } from './liveRouting/demo';
 import { registerLiveRouteDemo } from './liveRouting/routes';
+import { registerAssistantRoutes } from './assistant/routes';
+import { registerInvoiceRoutes } from './invoices/routes';
+import { registerOrderRoutes } from './orders/routes';
 
 export interface BuildOptions {
   config: AppConfig;
@@ -112,6 +115,9 @@ export async function buildApp(opts: BuildOptions): Promise<Built> {
   registerStreamRoutes(app, ctx, reg);
   registerWeatherRoutes(app, ctx, reg);
   registerDriverOpsRoutes(app, ctx, reg);
+  registerAssistantRoutes(app, ctx, reg);
+  registerInvoiceRoutes(app, ctx, reg);
+  registerOrderRoutes(app, ctx, reg);
   if (sim && simClock) registerDemoRoutes(app, ctx, reg, sim, simClock);
   if (ctx.liveRouteDemo) registerLiveRouteDemo(app, ctx, reg, ctx.liveRouteDemo);
 

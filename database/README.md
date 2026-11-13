@@ -6,7 +6,7 @@ Every seed file is **fictional data** made for the hackathon. Plant X is a ficti
 
 | Folder | Contents |
 |---|---|
-| [`migrations/`](migrations/) | Plain SQL migrations, applied in name order when the backend starts (`backend/src/db/db.ts`) |
+| [`migrations/`](migrations/) | Plain SQL migrations, applied in name order when the backend starts (`backend/src/db/db.ts`). `002_invoices.sql` adds the table that holds one invoice PDF per shipment; `003_shipment_orders.sql` records orders added to a truck that was already planned |
 | [`seed/`](seed/) | The seed the backend loads (`backend/src/sim/fixtures.ts`): `config.json`, `users.json`, `customers.json`, `transporters.json`, `routes.json`, `history.json`, `scenario-main.json` |
 | [`scripts/`](scripts/) | `generate-seed.ts` (writes `seed/`), `validate-seed.ts` (schema and consistency checks), `export-route-geometry.ts` (one-off map export, already run), `seed-lib.ts` (shared helpers) |
 | [`schemas/`](schemas/) | One JSON Schema per seed file |
@@ -21,7 +21,8 @@ The database file itself is created at run time and is git-ignored. `POST /api/v
 npm install
 npm run seed:generate   # rewrites seed/*.json; same bytes every run
 npm run seed:validate   # schemas plus nine consistency rules
-npm test                # the seven checks below
+npm run samples:invoices  # rewrites samples/invoices/*.pdf from the seed
+npm test                # the eight checks below
 ```
 
 | Check | What it proves |
@@ -33,6 +34,7 @@ npm test                # the seven checks below
 | 5 | DESIGN.md 6.6: ETA 11:45 at 09:15, 12:25 at 09:30, reroute 11:39 for +16 km and ₹720, arrivals 12:40 (continue) and 11:43 (reroute) |
 | 6 | SHP-1002: HIGH after the scripted report, reroute barred by the 20 t limit, split unavailable, RESCHEDULE recommended, 42 min late. SHP-1003: split recommended. Quiet shipments LOW |
 | 7 | Each alternative shares its base route's points exactly up to the exit km, then diverges |
+| 8 | The sample invoices in `samples/invoices/` equal a fresh run and are well-formed PDFs marked as fictional |
 
 ## How the seed was made
 
@@ -73,6 +75,27 @@ npm run seed:generate && npm run seed:validate && npm test
 ```
 
 The key is read from the environment only and is never written to a file. Without `--provider ors` the script uses the public OSRM router.
+
+## Generated invoices
+
+The coordinator's **Generate invoice** button builds a PDF from the shipment and these figures (`config.json` → `invoice`). **All of them are invented for the demo**; they are round numbers in a believable range, not quotes from any price list.
+
+| Product name contains | Rate (INR per tonne) | HSN heading |
+|---|---|---|
+| copolymer | 1,12,000 | 3902 |
+| polypropylene, or PP | 1,04,000 | 3902 |
+| LLDPE | 1,10,000 | 3901 |
+| HDPE | 1,08,000 | 3901 |
+| LDPE | 1,16,000 | 3901 |
+| anything else | 1,05,000 | 39 |
+
+The first matching row wins, which is why "copolymer" and "LLDPE" come before the shorter names they contain. HSN 3901 (polymers of ethylene) and 3902 (polymers of propylene) are the real tariff headings for these materials.
+
+Amount = quantity × rate. GST is 18%, shown as CGST 9% + SGST 9% because the fictional seller and both fictional buyers are in Maharashtra. Example, SHP-1001: 24 t × 1,04,000 = 24,96,000; plus 2,24,640 + 2,24,640; total 29,45,280.
+
+The page says it is a fictional document and not a valid tax invoice, and it shows no GSTIN, bank or payment details, because inventing those would look like real identifiers.
+
+**Samples.** `samples/invoices/INV-5001.pdf` to `INV-5005.pdf` are the invoices for the five demo shipments, for trying the **Upload PDF** button. `npm run samples:invoices` rewrites them with the backend's own builder (`backend/src/invoices/invoicePdf.ts`), and test 8 fails if they no longer match the seed.
 
 ## Routes and chainage
 

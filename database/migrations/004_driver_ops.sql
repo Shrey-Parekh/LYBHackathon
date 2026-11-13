@@ -1,4 +1,4 @@
--- Driver operations: start-of-shift checks, stops, coordinator check-ins, delivery photo and invoice.
+-- Driver operations: start-of-shift checks, stops, coordinator check-ins, delivery photo.
 
 -- A passed check. Only the fact and the time are kept: nothing from the licence image or the voice
 -- recording ever reaches the server (both are processed in the driver's browser and discarded).
@@ -35,11 +35,11 @@ CREATE TABLE checkins (
 );
 CREATE INDEX checkins_shipment ON checkins(shipment_id, requested_at);
 
--- Delivery photo (from the driver) and invoice (from the coordinator), stored in the database.
+-- Delivery photo from the driver, stored in the database. (Invoices have their own table, 002_invoices.sql.)
 CREATE TABLE documents (
   id           TEXT PRIMARY KEY,
   shipment_id  TEXT NOT NULL REFERENCES shipments(id),
-  kind         TEXT NOT NULL CHECK (kind IN ('DELIVERY_PHOTO', 'INVOICE')),
+  kind         TEXT NOT NULL CHECK (kind = 'DELIVERY_PHOTO'),
   mime         TEXT NOT NULL,
   file_name    TEXT NOT NULL,
   size_bytes   INTEGER NOT NULL,
