@@ -3,6 +3,7 @@ import { Camera, CheckCircle, IdentificationCard, Microphone, UploadSimple, Warn
 import { useDriverChecks, usePassCheck } from "../../api/ops";
 import { Button } from "../../components/ui";
 import { checkLicenceText } from "../../lib/licence";
+import { DEMO_MODE } from "../../lib/env";
 import { Column } from "./DriverTrip";
 
 /*
@@ -364,6 +365,12 @@ function VoiceCheck() {
           <p className="text-meta text-muted">
             {method === "words" ? `The words "${phrase.words[0]}" and "${phrase.words[1]}" must be heard.` : "This browser cannot transcribe speech, so it checks that a live voice reads for a moment."} Audio is not recorded.
           </p>
+          {/* Demo only: lets a presentation continue if the microphone fails. Not shown outside demo mode. */}
+          {DEMO_MODE && (
+            <button type="button" onClick={() => void pass.mutateAsync("VOICE")} disabled={pass.isPending} className="self-start text-body font-semibold text-accent-ink underline underline-offset-4 hover:no-underline disabled:opacity-50">
+              Skip voice check (demo)
+            </button>
+          )}
         </>
       )}
     </div>
