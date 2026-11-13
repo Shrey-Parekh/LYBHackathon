@@ -28,6 +28,7 @@ export const NotificationKind = z.enum([
   'ORDER_CONFIRMED',
   'NEW_TRIP',
   'ORDER_PLACED',
+  'DEPARTED',
 ]);
 
 export const ErrorResponse = z.object({
