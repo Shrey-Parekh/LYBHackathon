@@ -5,12 +5,15 @@ import { useCreateOrder, useNewOrderForm, usePlanOrder } from "../../api/queries
 import type { OrderDraft, TruckOption } from "../../api/contract";
 import { Button, Card, CardHeader, EmptyState, ErrorNote, Loading, Skeleton } from "../../components/ui";
 import { isMocked } from "../../lib/env";
+import { useSession } from "../../auth/session";
 import { dateTimeTz, duration, inr } from "../../lib/time";
 
 /*
   New order and truck choice. The API works out every candidate truck (share one that is already planned
   for the same customer, or send a separate one), gives the reason for each, and recommends one.
   The coordinator approves; this screen never ranks or judges the options itself.
+  A customer uses the same page for their own company: the API offers only idle drivers, and the
+  customer picks one (DriverChoice below).
 */
 const FIELD = "ct-underline-input";
 const LABEL = "grid content-start gap-1 text-meta font-semibold text-ink-2";
@@ -27,6 +30,7 @@ export function defaultPromise(nowIso: string): string {
 }
 
 export function NewOrder() {
+  const asCustomer = useSession()?.user.role === "CUSTOMER";
   const form = useNewOrderForm(!isMocked("/orders"));
   const plan = usePlanOrder();
   const create = useCreateOrder();
@@ -45,7 +49,7 @@ export function NewOrder() {
 
   if (isMocked("/orders")) {
     return (
-      <Page>
+      <Page asCustomer={asCustomer}>
         <EmptyState title="New orders need the API.">Start the backend and set VITE_USE_MOCKS=false to plan an order.</EmptyState>
       </Page>
     );
@@ -82,7 +86,7 @@ export function NewOrder() {
   const customer = form.data?.customers.find((c) => c.id === customerId);
 
   return (
-    <Page>
+    <Page asCustomer={asCustomer}>
       {form.isPending ? (
         <Loading label="Loading the order form">
           <Skeleton className="h-56 rounded-lg" />
@@ -97,8 +101,11 @@ export function NewOrder() {
               <CheckCircle size={20} weight="bold" aria-hidden className="mt-0.5 shrink-0 text-low" />
               <span>
                 <span className="font-semibold">{done.order_id}</span>{" "}
-                {done.option.type === "ADD_TO_TRUCK" ? `travels on ${done.shipment_id} (${done.option.vehicle_reg}) with the order already planned.` : `has its own truck, ${done.option.vehicle_reg} (${done.shipment_id}), driven by ${done.option.driver_name}.`}{" "}
-                {done.option.driver_name ? `${done.option.driver_name.split(" ")[0]} and the customer have been notified.` : "The customer has been notified."}
+                {asCustomer
+                  ? `is booked with ${done.option.driver_name} on ${done.option.vehicle_reg}, leaving Plant X ${dateTimeTz(done.option.planned_departure!)}. Plant X and ${done.option.driver_name?.split(" ")[0]} have been told.`
+                  : done.option.type === "ADD_TO_TRUCK"
+                    ? `travels on ${done.shipment_id} (${done.option.vehicle_reg}) with the order already planned. The customer has been notified.`
+                    : `has its own truck, ${done.option.vehicle_reg} (${done.shipment_id}), driven by ${done.option.driver_name}. ${done.option.driver_name?.split(" ")[0]} and the customer have been notified.`}
               </span>
             </p>
             {done.option.km_saved !== null && (
@@ -107,8 +114,8 @@ export function NewOrder() {
               </p>
             )}
             <div className="flex flex-wrap gap-3">
-              <Link to={`/coordinator/shipments/${done.shipment_id}`} className="btn-primary ct-go inline-flex h-10 items-center gap-2 rounded-md border border-accent bg-accent px-4 text-body font-semibold text-on-accent hover:bg-accent-hover">
-                Open {done.shipment_id}
+              <Link to={`/${asCustomer ? "customer" : "coordinator"}/shipments/${done.shipment_id}`} className="btn-primary ct-go inline-flex h-10 items-center gap-2 rounded-md border border-accent bg-accent px-4 text-body font-semibold text-on-accent hover:bg-accent-hover">
+                {asCustomer ? "Follow this delivery" : `Open ${done.shipment_id}`}
                 <ArrowRight size={16} weight="bold" aria-hidden />
               </Link>
               <Button onClick={startAgain}>Add another order</Button>
@@ -120,15 +127,22 @@ export function NewOrder() {
           <Card aria-labelledby="order-h">
             <CardHeader title="Order" id="order-h" />
             <form onSubmit={onSubmit} className="grid grid-cols-1 gap-x-8 gap-y-6 p-5 sm:grid-cols-2 sm:p-6">
-              <label className={LABEL} htmlFor="order-customer">
-                Customer
-                <select id="order-customer" className={FIELD} value={customerId} onChange={(e) => edited(setCustomerId)(e.target.value)}>
-                  {form.data.customers.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-                {customer?.deliver_to && <span className="font-normal text-muted">Deliver to {customer.deliver_to}</span>}
-              </label>
+              {asCustomer ? (
+                <div className={LABEL}>
+                  Deliver to
+                  <p className="flex h-12 items-center border-b-2 border-line text-lead font-normal text-ink">{customer?.deliver_to ?? customer?.name}</p>
+                </div>
+              ) : (
+                <label className={LABEL} htmlFor="order-customer">
+                  Customer
+                  <select id="order-customer" className={FIELD} value={customerId} onChange={(e) => edited(setCustomerId)(e.target.value)}>
+                    {form.data.customers.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  {customer?.deliver_to && <span className="font-normal text-muted">Deliver to {customer.deliver_to}</span>}
+                </label>
+              )}
               <label className={LABEL} htmlFor="order-product">
                 Product
                 <select id="order-product" className={FIELD} value={product} onChange={(e) => edited(setProduct)(e.target.value)}>
@@ -147,7 +161,7 @@ export function NewOrder() {
               </label>
               <div className="sm:col-span-2">
                 <Button type="submit" size="lg" variant={planned ? "secondary" : "primary"} disabled={!valid || plan.isPending}>
-                  {plan.isPending ? "Checking trucks…" : planned ? "Check again" : "Find a truck"}
+                  {plan.isPending ? (asCustomer ? "Checking drivers…" : "Checking trucks…") : planned ? "Check again" : asCustomer ? "Show free drivers" : "Find a truck"}
                 </Button>
               </div>
             </form>
@@ -160,19 +174,29 @@ export function NewOrder() {
 
           {planned && plan.data && (
             <Card aria-labelledby="trucks-h">
-              <CardHeader title="Trucks for this order" id="trucks-h" />
+              <CardHeader title={asCustomer ? "Drivers free now" : "Trucks for this order"} id="trucks-h" />
               {create.error && (
                 <div className="px-5 pt-4">
                   <ErrorNote what="the order" error={create.error} onRetry={() => plan.mutate(planned)} />
                 </div>
               )}
-              {plan.data.recommended_option_id === null && <p className="px-5 pt-4 text-body text-ink-2">No truck can take this order as entered. Change the quantity or the promised time and check again.</p>}
-              <TruckOptions
-                options={plan.data.options}
-                promisedBy={planned.promised_by}
-                busy={create.isPending}
-                onApprove={(o) => create.mutate({ ...planned, option_id: o.id })}
-              />
+              {plan.data.recommended_option_id === null && (
+                <p className="px-5 pt-4 text-body text-ink-2">
+                  {asCustomer
+                    ? "No driver is free for this order right now. Try a smaller quantity or a later time, or ask Plant X."
+                    : "No truck can take this order as entered. Change the quantity or the promised time and check again."}
+                </p>
+              )}
+              {asCustomer ? (
+                <DriverChoice options={plan.data.options} busy={create.isPending} onPick={(o) => create.mutate({ ...planned, option_id: o.id })} />
+              ) : (
+                <TruckOptions
+                  options={plan.data.options}
+                  promisedBy={planned.promised_by}
+                  busy={create.isPending}
+                  onApprove={(o) => create.mutate({ ...planned, option_id: o.id })}
+                />
+              )}
             </Card>
           )}
         </>
@@ -181,12 +205,21 @@ export function NewOrder() {
   );
 }
 
-function Page({ children }: { children: React.ReactNode }) {
+function Page({ children, asCustomer }: { children: React.ReactNode; asCustomer: boolean }) {
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6">
+    <div className={`mx-auto space-y-6 px-4 py-6 sm:px-6 ${asCustomer ? "max-w-3xl" : "max-w-5xl"}`}>
       <div>
+        {asCustomer && (
+          <Link to="/customer" className="text-meta font-semibold text-accent-ink hover:underline">
+            Your deliveries
+          </Link>
+        )}
         <h1 className="text-figure font-[750] tracking-[-0.025em]">New order</h1>
-        <p className="mt-1 max-w-[62ch] text-body text-muted">If a truck is already planned for the same customer and has room, the order rides with it. Nothing is assigned until you approve a truck.</p>
+        <p className="mt-1 max-w-[62ch] text-body text-muted">
+          {asCustomer
+            ? "Say what you need and by when, then pick one of the drivers who is free now. Plant X and the driver are told at once, and the delivery appears on your list."
+            : "If a truck is already planned for the same customer and has room, the order rides with it. Nothing is assigned until you approve a truck."}
+        </p>
       </div>
       {children}
     </div>
@@ -276,5 +309,44 @@ export function TruckOptions({ options, promisedBy, busy, onApprove }: { options
       </table>
       </div>
     </>
+  );
+}
+
+/** Customer view: one row per idle driver, with their truck and when it would arrive. */
+export function DriverChoice({ options, busy, onPick }: { options: TruckOption[]; busy?: boolean; onPick: (o: TruckOption) => void }) {
+  const rows = [...options.filter((o) => o.recommended), ...options.filter((o) => !o.recommended)];
+  return (
+    <ul className="divide-y divide-line">
+      {rows.map((o) => {
+        const first = o.driver_name?.split(" ")[0] ?? "this driver";
+        return (
+          <li key={o.id} className={`grid grid-cols-1 gap-3 border-l-4 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${o.recommended ? "border-accent bg-accent-soft" : "border-transparent"}`}>
+            <div className="min-w-0">
+              {o.recommended && <p className="text-meta font-semibold text-ink">Earliest on time</p>}
+              <p className={`text-lead font-semibold ${o.feasible ? "text-ink" : "text-muted"}`}>{o.driver_name}</p>
+              <p className="text-meta text-muted">
+                {o.transporter_name}
+                {o.vehicle_reg ? `, truck ${o.vehicle_reg} (${o.capacity_t} t)` : ""}
+              </p>
+              {o.feasible ? (
+                <p className="tnum mt-1 text-body text-ink-2">
+                  Leaves {dateTimeTz(o.planned_departure!)}, expected <span className="font-semibold text-ink">{dateTimeTz(o.eta!)}</span>
+                  {o.margin_min !== null && `, ${duration(Math.abs(o.margin_min))} ${o.margin_min >= 0 ? "early" : "late"}`}
+                </p>
+              ) : (
+                <p className="mt-1 flex items-start gap-1 text-meta text-ink-2">
+                  <Prohibit size={14} weight="bold" aria-hidden className="mt-0.5 shrink-0" /> {o.infeasible_reason}
+                </p>
+              )}
+            </div>
+            {o.feasible && (
+              <Button variant={o.recommended ? "primary" : "secondary"} disabled={busy} onClick={() => onPick(o)}>
+                Choose {first}
+              </Button>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

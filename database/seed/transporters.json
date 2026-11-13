@@ -41,6 +41,14 @@
           "payload_capacity_t": 28,
           "tare_t": 10.6,
           "standby": false
+        },
+        {
+          "id": "VEH-S5",
+          "registration": "MH 99 SB 6131",
+          "body": "10-wheeler",
+          "payload_capacity_t": 20,
+          "tare_t": 8.4,
+          "standby": false
         }
       ]
     },
@@ -71,6 +79,14 @@
           "body": "10-wheeler",
           "payload_capacity_t": 20,
           "tare_t": 8.2,
+          "standby": false
+        },
+        {
+          "id": "VEH-K4",
+          "registration": "MH 99 KR 3315",
+          "body": "12-wheeler",
+          "payload_capacity_t": 25,
+          "tare_t": 9.8,
           "standby": false
         }
       ]

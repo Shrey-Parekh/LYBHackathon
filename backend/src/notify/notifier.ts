@@ -18,7 +18,8 @@ export type NotificationKind =
   | 'DRIVER_STOP'
   | 'INVOICE_READY'
   | 'ORDER_CONFIRMED'
-  | 'NEW_TRIP';
+  | 'NEW_TRIP'
+  | 'ORDER_PLACED';
 
 export interface NewNotification {
   user_id: string;

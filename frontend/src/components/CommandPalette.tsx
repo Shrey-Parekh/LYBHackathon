@@ -37,7 +37,10 @@ const PAGES: Record<Role, { label: string; to: string; icon: Icon }[]> = {
     { label: "My trip", to: "/driver", icon: Truck },
     { label: "Report a problem", to: "/driver/report", icon: WarningDiamond },
   ],
-  CUSTOMER: [{ label: "My deliveries", to: "/customer", icon: House }],
+  CUSTOMER: [
+    { label: "My deliveries", to: "/customer", icon: House },
+    { label: "New order", to: "/customer/orders/new", icon: PlusCircle },
+  ],
 };
 
 export function useCommandPalette() {

@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router";
-import { NewOrder, defaultPromise, istInputToIso } from "./NewOrder";
+import { DriverChoice, NewOrder, defaultPromise, istInputToIso } from "./NewOrder";
 import type { NewOrderForm, OrderPlan, TruckOption } from "../../api/contract";
 
 const api = vi.hoisted(() => vi.fn());
@@ -86,5 +86,22 @@ describe("NewOrder", () => {
     expect(await screen.findByRole("table")).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText("Quantity (tonnes)"), "0");
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+});
+
+describe("DriverChoice", () => {
+  it("lists each free driver with their truck and arrival, and picks one", async () => {
+    const pick = vi.fn();
+    const deepak = { ...PLAN.options[2], id: "NEW-USR-DRV-06", driver_name: "Deepak More", transporter_name: "Konkan Roadlines", recommended: true };
+    const prakash = { ...base, id: "NEW-USR-DRV-04", driver_name: "Prakash Jadhav", transporter_name: "Sahyadri Bulk Carriers", feasible: false, infeasible_reason: "No free Sahyadri Bulk Carriers truck can carry 30 t" };
+    render(<DriverChoice options={[prakash, deepak]} onPick={pick} />);
+    const rows = screen.getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("Earliest on time");
+    expect(rows[0]).toHaveTextContent("Deepak More");
+    expect(rows[0]).toHaveTextContent("truck MH 99 KR 3048 (20 t)");
+    expect(rows[1]).toHaveTextContent("No free Sahyadri Bulk Carriers truck can carry 30 t");
+    expect(within(rows[1]).queryByRole("button")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Choose Deepak" }));
+    expect(pick).toHaveBeenCalledWith(deepak);
   });
 });

@@ -36,6 +36,7 @@ export function App() {
       <Route path="/customer" element={<RequireRole role="CUSTOMER" />}>
         <Route index element={<MyDeliveries />} />
         <Route path="shipments/:id" element={<DeliveryDetail />} />
+        <Route path="orders/new" element={<NewOrder />} />
       </Route>
       <Route path="*" element={<Home />} />
     </Routes>

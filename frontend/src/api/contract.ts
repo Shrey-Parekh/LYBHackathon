@@ -350,7 +350,7 @@ export interface Notification {
   id: string;
   user_id: string;
   shipment_id: string | null;
-  kind: "RISK_MEDIUM" | "RISK_HIGH" | "DECISION_APPLIED" | "BACK_ON_SCHEDULE" | "TRACKING_LOST" | "DELIVERED" | "DELIVERY_PHOTO" | "DELIVERY_VERIFIED" | "CHECKIN_REQUEST" | "CHECKIN_REPLY" | "DRIVER_STOP" | "INVOICE_READY" | "ORDER_CONFIRMED" | "NEW_TRIP";
+  kind: "RISK_MEDIUM" | "RISK_HIGH" | "DECISION_APPLIED" | "BACK_ON_SCHEDULE" | "TRACKING_LOST" | "DELIVERED" | "DELIVERY_PHOTO" | "DELIVERY_VERIFIED" | "CHECKIN_REQUEST" | "CHECKIN_REPLY" | "DRIVER_STOP" | "INVOICE_READY" | "ORDER_CONFIRMED" | "NEW_TRIP" | "ORDER_PLACED";
   title: string;
   body: string;
   created_at: string;

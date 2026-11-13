@@ -36,11 +36,18 @@ export function MyDeliveries() {
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 sm:px-6 lg:py-10">
-      <h1 className="text-figure font-[750] tracking-[-0.025em]">Your deliveries</h1>
-      <p className="mt-1 text-body text-muted">
-        {session?.user.name}
-        {company ? `, ${company}` : ""}. Times are IST.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-figure font-[750] tracking-[-0.025em]">Your deliveries</h1>
+          <p className="mt-1 text-body text-muted">
+            {session?.user.name}
+            {company ? `, ${company}` : ""}. Times are IST.
+          </p>
+        </div>
+        <Link to="/customer/orders/new" className="btn-primary ct-go inline-flex h-11 items-center gap-2 rounded-md border border-accent bg-accent px-5 text-body font-semibold text-on-accent hover:bg-accent-hover">
+          New order <ArrowRight size={16} weight="bold" aria-hidden />
+        </Link>
+      </div>
 
       {shipments.error && (
         <div className="mt-5">

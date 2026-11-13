@@ -116,6 +116,7 @@ function buildTransporters() {
           vehicle('VEH-S2', 'MH 99 SB 4385', '14-wheeler', 28, 10.8),
           vehicle('VEH-S3', 'MH 99 SB 5012', '12-wheeler', 25, 9.4, true),
           vehicle('VEH-S4', 'MH 99 SB 5260', '14-wheeler', 28, 10.6),
+          vehicle('VEH-S5', 'MH 99 SB 6131', '10-wheeler', 20, 8.4),
         ],
       },
       {
@@ -124,6 +125,7 @@ function buildTransporters() {
           vehicle('VEH-K1', 'MH 99 KR 2291', '12-wheeler', 25, 10.0),
           vehicle('VEH-K2', 'MH 99 KR 2617', '14-wheeler', 28, 10.9),
           vehicle('VEH-K3', 'MH 99 KR 3048', '10-wheeler', 20, 8.2),
+          vehicle('VEH-K4', 'MH 99 KR 3315', '12-wheeler', 25, 9.8),
         ],
       },
     ],
@@ -144,10 +146,17 @@ function buildUsers(rng: Rng) {
     ['USR-CUST-01', 'Anil Deshpande', 'deccanmouldings', 'CUSTOMER', 'CUS-01', null],
     ['USR-CUST-02', 'Kavita Joshi', 'deccanmouldings', 'CUSTOMER', 'CUS-01', null],
     ['USR-CUST-03', 'Nikhil Bhosale', 'godavariflexi', 'CUSTOMER', 'CUS-02', null],
+    // Drivers with no trip in the scenario: free to take a new order. Added last, with their own random
+    // stream below, so every earlier password and the history stay exactly as they were.
+    ['USR-DRV-04', 'Prakash Jadhav', 'sahyadri', 'DRIVER', null, 'TRN-01'],
+    ['USR-DRV-05', 'Imran Shaikh', 'konkan', 'DRIVER', null, 'TRN-02'],
+    ['USR-DRV-06', 'Deepak More', 'konkan', 'DRIVER', null, 'TRN-02'],
   ];
+  const extra = new Rng(SEED + 1);
   const users = people.map(([id, name, domain, role, customerId, transporterId], n) => {
     const [first, last] = name.toLowerCase().split(' ');
-    const password = Array.from({ length: 14 }, () => rng.choice(PASSWORD_ALPHABET.split(''))).join('');
+    const source = n < 8 ? rng : extra;
+    const password = Array.from({ length: 14 }, () => source.choice(PASSWORD_ALPHABET.split(''))).join('');
     return {
       id, name, email: `${first}.${last}@${domain}.example`, password, role,
       ...(customerId ? { customer_id: customerId } : {}),

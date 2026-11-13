@@ -74,6 +74,33 @@
       "role": "CUSTOMER",
       "customer_id": "CUS-02",
       "phone": "+91 00000 00008"
+    },
+    {
+      "id": "USR-DRV-04",
+      "name": "Prakash Jadhav",
+      "email": "prakash.jadhav@sahyadri.example",
+      "password": "dDRUa7AvCddsEr",
+      "role": "DRIVER",
+      "transporter_id": "TRN-01",
+      "phone": "+91 00000 00009"
+    },
+    {
+      "id": "USR-DRV-05",
+      "name": "Imran Shaikh",
+      "email": "imran.shaikh@konkan.example",
+      "password": "NperEuUaHCeeMs",
+      "role": "DRIVER",
+      "transporter_id": "TRN-02",
+      "phone": "+91 00000 00010"
+    },
+    {
+      "id": "USR-DRV-06",
+      "name": "Deepak More",
+      "email": "deepak.more@konkan.example",
+      "password": "wvx3gcgQyRJeeh",
+      "role": "DRIVER",
+      "transporter_id": "TRN-02",
+      "phone": "+91 00000 00011"
     }
   ]
 }

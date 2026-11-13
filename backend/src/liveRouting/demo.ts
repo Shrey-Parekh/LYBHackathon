@@ -128,11 +128,15 @@ export class LiveRouteDemo {
   }
 
   private availableDrivers() {
+    // Busy: on a live trip, or holding a trip from a new order (SHP-2xxx) that is not finished yet.
     const assigned = this.ctx.db.prepare(`SELECT driver_user_id FROM shipments
-      WHERE id LIKE ? AND status IN ('IN_TRANSIT', 'ARRIVED')`).all(`${LIVE_SHIPMENT_PREFIX}-%`) as { driver_user_id: string }[];
+      WHERE (id LIKE ? AND status IN ('IN_TRANSIT', 'ARRIVED'))
+         OR (id LIKE 'SHP-2%' AND status IN ('PLANNED', 'DISPATCHED', 'IN_TRANSIT', 'ARRIVED'))`).all(`${LIVE_SHIPMENT_PREFIX}-%`) as { driver_user_id: string }[];
     const occupied = new Set(assigned.map((row) => row.driver_user_id));
     const scripted = new Set(this.ctx.fixtures.scenario.shipments.filter((s) => s.status === 'IN_TRANSIT').map((s) => s.driver_user_id));
-    return this.ctx.fixtures.users.filter((user) => user.role === 'DRIVER' && user.transporter_id && !occupied.has(user.id))
+    // Only the scenario's drivers run live demos; drivers with no scripted trip stay free for new orders.
+    const cast = new Set(this.ctx.fixtures.scenario.shipments.map((s) => s.driver_user_id));
+    return this.ctx.fixtures.users.filter((user) => user.role === 'DRIVER' && user.transporter_id && cast.has(user.id) && !occupied.has(user.id))
       .sort((a, b) => Number(scripted.has(a.id)) - Number(scripted.has(b.id)));
   }
 

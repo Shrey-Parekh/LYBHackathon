@@ -64,6 +64,8 @@ Every role has a chat button in the top bar. It answers questions such as "Where
 
 ### Add an order and choose its truck
 
+A customer can order too: on **Your deliveries**, click **New order**, enter product, quantity and time, then **Show free drivers** and **Choose** one. Customers only order for their own company and only see idle drivers; sharing a planned truck stays the coordinator's call. The coordinators get a notification, the driver gets the new trip, and the order appears on the customer's list, all live.
+
 Sign in as the coordinator and open **New order**. Pick the customer, product, quantity and promised time, then **Find a truck**. The app lists every candidate with its reason and marks one **Recommended**; nothing is assigned until you click **Approve**.
 
 An order can share a truck that is already planned when all of these hold:
@@ -74,7 +76,7 @@ An order can share a truck that is already planned when all of these hold:
 4. the new order is not promised earlier than the truck's own promise;
 5. the truck's current ETA is at or before the new order's promise.
 
-Otherwise the order gets its own truck. Every driver in the user list is offered, each with the smallest free truck of their transporter that can carry the load. The truck is planned to arrive an hour before the promise, to leave no sooner than an hour from now, and not before that driver is back from any trip already assigned (the option then says so).
+Otherwise the order gets its own truck. Only idle drivers are offered (no trip planned or under way), each with the smallest free truck of their transporter that can carry the load. The truck is planned to arrive an hour before the promise and to leave no sooner than an hour from now. The seed has three idle drivers for this: Prakash Jadhav, Imran Shaikh and Deepak More; Ravi, Gurpreet and Sunil drive the scripted trips and the live-routing demo.
 
 To see it after **Reset to 08:50**: 6 t for Deccan Mouldings, promised the next day at 15:00, is recommended onto SHP-1004 (a 28 t truck carrying 20 t). That avoids a 150 km trip, about ₹6,750 at the seed's ₹45 per km. SHP-1001 is listed as unavailable because it has already left. Ask for 9 t and the shared truck is refused ("Only 8 t spare") in favour of a separate one.
 
@@ -84,7 +86,7 @@ After approval, without a page reload:
 - the driver gets a **New trip** banner and notification; the trip shows the route map, alerts on the route, and safety points for its load and timing (a driver with several trips switches between them at the top);
 - a shared truck shows **Also on this truck**, and its driver is told to load the extra order.
 
-A generated invoice has one line per order, and the reset removes the new orders. In the seed every driver already has a trip, so for a promise tomorrow afternoon the separate truck may arrive late; try a promise of 20:00 the next day to see an on-time one. Not covered: orders for different delivery points on one truck, trucks already on the road, and the customer's receiving hours.
+A generated invoice has one line per order, and the reset removes the new orders. Not covered: orders for different delivery points on one truck, trucks already on the road, and the customer's receiving hours.
 
 ### Upload and download an invoice
 

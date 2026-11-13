@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { REAL_FIXTURES_DIR } from '../src/sim/fixtures';
 import { COORD, CUST1, DRIVER1, makeApp, type TestApp } from './helpers';
 
-const GURPREET = 'USR-DRV-02';
+const DEEPAK = 'USR-DRV-06'; // idle in the seed: no scripted trip
 
 const DECCAN = 'CUS-01';
 const order = (over: Record<string, unknown> = {}) => ({
@@ -32,8 +32,8 @@ describe('new orders and truck choice', () => {
 
   it('recommends the planned truck to the same customer, and explains every candidate', async () => {
     const p = await plan();
-    // Never another customer's truck; one separate-truck option per driver in the user list, by name.
-    expect(p.options.map((o: any) => o.id)).toEqual(['ADD-SHP-1001', 'ADD-SHP-1004', 'NEW-USR-DRV-02', 'NEW-USR-DRV-01', 'NEW-USR-DRV-03']);
+    // Never another customer's truck; one separate-truck option per idle driver, by name. Ravi, Gurpreet and Sunil have trips.
+    expect(p.options.map((o: any) => o.id)).toEqual(['ADD-SHP-1001', 'ADD-SHP-1004', 'NEW-USR-DRV-06', 'NEW-USR-DRV-05', 'NEW-USR-DRV-04']);
     expect(p.recommended_option_id).toBe('ADD-SHP-1004');
     expect(option(p, 'ADD-SHP-1004')).toMatchObject({
       type: 'ADD_TO_TRUCK', feasible: true, recommended: true, shipment_id: 'SHP-1004', vehicle_reg: 'MH 99 SB 4385',
@@ -42,13 +42,12 @@ describe('new orders and truck choice', () => {
     expect(option(p, 'ADD-SHP-1004').margin_min).toBeGreaterThan(0);
     expect(option(p, 'ADD-SHP-1001')).toMatchObject({ feasible: false, infeasible_reason: 'This truck has already left the plant' });
     // Each driver gets the smallest free vehicle of their transporter that fits, planned to arrive an hour before the promise.
-    expect(option(p, 'NEW-USR-DRV-02')).toMatchObject({
-      type: 'NEW_TRUCK', feasible: true, recommended: false, vehicle_reg: 'MH 99 KR 3048', capacity_t: 20, spare_after_t: 14, km_saved: null, driver_name: 'Gurpreet Sandhu',
+    expect(option(p, 'NEW-USR-DRV-06')).toMatchObject({
+      type: 'NEW_TRUCK', feasible: true, recommended: false, vehicle_reg: 'MH 99 KR 3048', capacity_t: 20, spare_after_t: 14, km_saved: null, driver_name: 'Deepak More',
     });
-    // Gurpreet is on SHP-1005 tomorrow, so his truck leaves only once he is back; another driver can still make it in time.
-    expect(option(p, 'NEW-USR-DRV-02').note).toBe('Leaves after Gurpreet is back from SHP-1005');
-    const evening = await plan({ promised_by: '2026-11-17T14:30:00Z' }); // 20:00 IST: time for Gurpreet to come back first
-    expect(option(evening, 'NEW-USR-DRV-02').margin_min).toBeGreaterThanOrEqual(55);
+    expect(option(p, 'NEW-USR-DRV-06').margin_min).toBeGreaterThanOrEqual(55);
+    expect(option(p, 'NEW-USR-DRV-05')).toMatchObject({ vehicle_reg: 'MH 99 KR 3315', driver_name: 'Imran Shaikh' });
+    expect(option(p, 'NEW-USR-DRV-04')).toMatchObject({ vehicle_reg: 'MH 99 SB 6131', driver_name: 'Prakash Jadhav' });
     const offered = p.options.filter((o: any) => o.type === 'NEW_TRUCK' && o.vehicle_reg).map((o: any) => o.vehicle_reg);
     expect(new Set(offered).size).toBe(offered.length); // no truck offered twice
     // Planning changes nothing.
@@ -66,7 +65,7 @@ describe('new orders and truck choice', () => {
     expect(tooEarly.recommended_option_id).toMatch(/^NEW-USR-DRV-/);
 
     const huge = await plan({ quantity_t: 30 });
-    expect(option(huge, 'NEW-USR-DRV-02')).toMatchObject({ feasible: false, infeasible_reason: 'No free Konkan Roadlines truck can carry 30 t' });
+    expect(option(huge, 'NEW-USR-DRV-06')).toMatchObject({ feasible: false, infeasible_reason: 'No free Konkan Roadlines truck can carry 30 t' });
     expect(huge.recommended_option_id).toBeNull();
   });
 
@@ -100,29 +99,46 @@ describe('new orders and truck choice', () => {
   });
 
   it('approving a separate truck creates a planned shipment with an ETA, and that vehicle is then taken', async () => {
-    const made = await t.req('POST', '/orders', coord, { ...order({ quantity_t: 9, promised_by: '2026-11-17T14:30:00Z' }), option_id: 'NEW-USR-DRV-02' });
+    const made = await t.req('POST', '/orders', coord, { ...order({ quantity_t: 9 }), option_id: 'NEW-USR-DRV-06' });
     expect(made.status).toBe(201);
     expect(made.body).toMatchObject({ order_id: 'ORD-6001', shipment_id: 'SHP-2001' });
     const s = (await t.req('GET', '/shipments/SHP-2001', coord)).body;
     expect(s).toMatchObject({ status: 'PLANNED', vehicle_reg: 'MH 99 KR 3048', quantity_t: 9, gross_t: 17.2, planned_route_id: 'RTE-01', extra_orders: [] });
-    expect(s.driver.name).toBe('Gurpreet Sandhu');
+    expect(s.driver.name).toBe('Deepak More');
     expect(s.current_eta.eta).toBe(made.body.option.eta); // the preview showed exactly what was created
     expect((await t.req('GET', '/shipments/SHP-2001', await t.login(CUST1))).status).toBe(200);
     // The driver is told and sees the new trip.
-    const drv = await t.login(GURPREET);
+    const drv = await t.login(DEEPAK);
     expect((await t.req('GET', '/notifications', drv)).body.find((n: any) => n.kind === 'NEW_TRIP')).toMatchObject({ shipment_id: 'SHP-2001', title: 'New trip SHP-2001' });
     expect((await t.req('GET', '/shipments', drv)).body.map((x: any) => x.id)).toContain('SHP-2001');
-    // The next order sees a different free vehicle, and can now also share the new truck.
-    const next = await plan({ quantity_t: 3, promised_by: '2026-11-17T14:30:00Z' });
-    expect(option(next, 'NEW-USR-DRV-02').vehicle_reg).not.toBe('MH 99 KR 3048');
+    // Deepak is no longer idle, so he is not offered again; the next order can share his truck instead.
+    const next = await plan({ quantity_t: 3 });
+    expect(option(next, 'NEW-USR-DRV-06')).toBeUndefined();
+    expect(option(next, 'NEW-USR-DRV-05').vehicle_reg).toBe('MH 99 KR 3315');
     expect(option(next, 'ADD-SHP-2001')).toMatchObject({ feasible: true, spare_after_t: 8 });
   });
 
-  it('is for coordinators only, validates input, and a reset removes the new orders', async () => {
-    for (const who of [CUST1, DRIVER1]) {
-      expect((await t.req('POST', '/orders/plan', await t.login(who), order())).status).toBe(403);
-      expect((await t.req('POST', '/orders', await t.login(who), { ...order(), option_id: 'NEW-TRUCK' })).status).toBe(403);
-    }
+  it('lets a customer order for their own company with an idle driver, and tells the coordinators', async () => {
+    const cust = await t.login(CUST1);
+    const form = (await t.req('GET', '/orders/new', cust)).body;
+    expect(form.customers.map((c: any) => c.id)).toEqual(['CUS-01']); // only their own company
+    const p = (await t.req('POST', '/orders/plan', cust, order())).body;
+    expect(p.options.map((o: any) => o.id)).toEqual(['NEW-USR-DRV-06', 'NEW-USR-DRV-05', 'NEW-USR-DRV-04']); // drivers only, no truck sharing
+    expect((await t.req('POST', '/orders/plan', cust, order({ customer_id: 'CUS-02' }))).status).toBe(403);
+    expect((await t.req('POST', '/orders', cust, { ...order(), option_id: 'ADD-SHP-1004' })).status).toBe(422); // sharing is the coordinator's call
+
+    const made = await t.req('POST', '/orders', cust, { ...order(), option_id: 'NEW-USR-DRV-04' });
+    expect(made.status).toBe(201);
+    expect(made.body.option.driver_name).toBe('Prakash Jadhav');
+    const placed = (await t.req('GET', '/notifications', coord)).body.find((n: any) => n.kind === 'ORDER_PLACED');
+    expect(placed).toMatchObject({ shipment_id: made.body.shipment_id, title: `Deccan Mouldings Pvt Ltd placed order ${made.body.order_id}` });
+    expect((await t.req('GET', '/notifications', await t.login('USR-DRV-04'))).body.some((n: any) => n.kind === 'NEW_TRIP')).toBe(true);
+    expect((await t.req('GET', '/shipments', cust)).body.map((x: any) => x.id)).toContain(made.body.shipment_id);
+  });
+
+  it('is for coordinators and customers only, validates input, and a reset removes the new orders', async () => {
+    expect((await t.req('POST', '/orders/plan', await t.login(DRIVER1), order())).status).toBe(403);
+    expect((await t.req('POST', '/orders', await t.login(DRIVER1), { ...order(), option_id: 'NEW-USR-DRV-06' })).status).toBe(403);
     expect((await t.req('POST', '/orders/plan', coord, order({ customer_id: 'CUS-99' }))).status).toBe(422);
     expect((await t.req('POST', '/orders/plan', coord, order({ quantity_t: 0 }))).status).toBe(422);
     expect((await t.req('POST', '/orders/plan', coord, order({ promised_by: '2026-11-16T03:00:00Z' }))).body.error.message).toBe('The promised delivery time must be in the future');

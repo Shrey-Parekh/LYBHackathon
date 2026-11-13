@@ -6,10 +6,11 @@
 //   3. the vehicle has enough spare payload;
 //   4. the new order is not promised earlier than the truck's own promise (the truck stays tracked against that one);
 //   5. the truck's current ETA is at or before the new order's promise.
-// Otherwise the order gets its own truck. Each driver in the user list is offered with the smallest free
-// vehicle of their transporter that can carry it, leaving once that driver is back from any trip already
-// assigned. The driver is assigned when the coordinator approves, and is notified.
-// The coordinator sees every candidate with its reason and approves one; nothing is assigned automatically.
+// Otherwise the order gets its own truck. Each idle driver in the user list (no trip planned or under way)
+// is offered with the smallest free vehicle of their transporter that can carry it. The driver is assigned
+// when the order is approved, and is notified.
+// The coordinator sees every candidate with its reason and approves one. A customer places their own order
+// by choosing one of the idle drivers; sharing a planned truck stays the coordinator's call.
 import { audit } from '../audit';
 import type { AuthUser } from '../auth/policy';
 import type { Ctx } from '../ctx';
@@ -143,29 +144,17 @@ function addToTruck(ctx: Ctx, s: ShipmentRow, input: OrderInput, fleet: Vehicle[
   };
 }
 
-/** When this driver is back at the plant: after the last trip already assigned to them, plus the drive back. */
-function driverFreeAt(ctx: Ctx, driverId: string): { at: number; after: string | null } {
-  const { db } = ctx;
-  const trips = db
-    .prepare(`SELECT id FROM shipments WHERE driver_user_id = ? AND status IN (${NOT_FINISHED.map(() => '?').join(',')})`)
-    .all(driverId, ...NOT_FINISHED) as { id: string }[];
-  let at = 0;
-  let after: string | null = null;
-  for (const { id } of trips) {
-    const s = getShipment(db, id)!;
-    const route = ctx.fixtures.routes.find((r) => r.id === s.active_route_id) ?? ctx.fixtures.routes.find((r) => r.id === s.planned_route_id);
-    const drive = route ? tripMinutes(route) : 0;
-    const arrive = getSnapshot(db, s.current_eta_snapshot_id)?.eta ?? addMinutes(s.planned_departure, drive);
-    const back = parseIso(arrive) + drive * MIN_MS;
-    if (back > at) [at, after] = [back, s.id];
-  }
-  return { at, after };
-}
-
-/** One "separate truck" option per driver in the user list, each with a free vehicle of the driver's transporter. */
+/** One "separate truck" option per idle driver in the user list, each with a free vehicle of the driver's transporter. */
 function newTrucks(ctx: Ctx, input: OrderInput, fleet: Vehicle[], now: string): (TruckOption & { plan?: DriverPlan })[] {
   const { db } = ctx;
-  const drivers = db.prepare("SELECT id, name, transporter_id FROM users WHERE role = 'DRIVER' AND transporter_id IS NOT NULL ORDER BY name").all() as {
+  // Idle: no trip of theirs is planned, dispatched, on the road or waiting to unload.
+  const drivers = db
+    .prepare(
+      `SELECT id, name, transporter_id FROM users u WHERE role = 'DRIVER' AND transporter_id IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM shipments s WHERE s.driver_user_id = u.id AND s.status IN (${NOT_FINISHED.map(() => '?').join(',')}))
+       ORDER BY name`,
+    )
+    .all(...NOT_FINISHED) as {
     id: string;
     name: string;
     transporter_id: string;
@@ -183,16 +172,14 @@ function newTrucks(ctx: Ctx, input: OrderInput, fleet: Vehicle[], now: string): 
       .sort((a, b) => a.payload_capacity_t - b.payload_capacity_t || a.registration.localeCompare(b.registration))[0];
     if (!vehicle) return { ...option, infeasible_reason: `No free ${option.transporter_name} truck can carry ${input.quantity_t} t` };
     taken.add(vehicle.registration);
-    // Leave as late as still arrives an hour early, but not before loading is done or the driver is back. Rounded up to 5 minutes.
+    // Leave as late as still arrives an hour early, but not before loading is done. Rounded up to 5 minutes.
     const latest = parseIso(input.promised_by) - (tripMinutes(route) + ARRIVAL_BUFFER_MIN) * MIN_MS;
     const earliest = parseIso(now) + LOADING_LEAD_MIN * MIN_MS;
-    const free = driverFreeAt(ctx, d.id);
-    const departure = toIso(Math.ceil(Math.max(latest, earliest, free.at) / (5 * MIN_MS)) * 5 * MIN_MS);
+    const departure = toIso(Math.ceil(Math.max(latest, earliest) / (5 * MIN_MS)) * 5 * MIN_MS);
     return {
       ...option,
       feasible: true,
       label: `Separate truck ${vehicle.registration} with ${d.name}`,
-      note: free.at > Math.max(latest, earliest) && free.after ? `Leaves after ${d.name.split(' ')[0]} is back from ${free.after}` : null,
       vehicle_reg: vehicle.registration,
       capacity_t: vehicle.payload_capacity_t,
       load_after_t: input.quantity_t,
@@ -239,7 +226,7 @@ function createShipment(ctx: Ctx, input: OrderInput, plan: DriverPlan, departure
 }
 
 /** Every candidate truck for this order, feasible or not, and which one is recommended. */
-export function planOrder(ctx: Ctx, input: OrderInput, now: string): { options: TruckOption[]; recommended_option_id: string | null; plans: Map<string, DriverPlan> } {
+export function planOrder(ctx: Ctx, input: OrderInput, now: string, audience: 'COORDINATOR' | 'CUSTOMER' = 'COORDINATOR'): { options: TruckOption[]; recommended_option_id: string | null; plans: Map<string, DriverPlan> } {
   const { db } = ctx;
   const fleet = vehicles(ctx);
   const sameCustomer = (db
@@ -248,7 +235,7 @@ export function planOrder(ctx: Ctx, input: OrderInput, now: string): { options: 
        WHERE o.customer_id = ? AND s.status IN ('PLANNED', 'DISPATCHED', 'IN_TRANSIT') AND s.id NOT LIKE ? ORDER BY s.planned_departure, s.id`,
     )
     .all(input.customer_id, `${LIVE_SHIPMENT_PREFIX}%`) as { id: string }[]).map((r) => getShipment(db, r.id)!);
-  const adds = sameCustomer.map((s) => addToTruck(ctx, s, input, fleet));
+  const adds = audience === 'CUSTOMER' ? [] : sameCustomer.map((s) => addToTruck(ctx, s, input, fleet));
 
   const plans = new Map<string, DriverPlan>();
   const fresh = newTrucks(ctx, input, fleet, now).map(({ plan, ...o }) => {
@@ -279,7 +266,7 @@ export function createOrder(ctx: Ctx, user: AuthUser, input: OrderInput, optionI
   validateOrder(ctx, input, now);
   const hints: PendingHint[] = [];
   const result = db.transaction(() => {
-    const { options, plans } = planOrder(ctx, input, now);
+    const { options, plans } = planOrder(ctx, input, now, user.role === 'CUSTOMER' ? 'CUSTOMER' : 'COORDINATOR');
     const option = options.find((o) => o.id === optionId);
     if (!option) throw validationFailed('Unknown option');
     if (!option.feasible) throw new ApiError(409, 'ORDER_PLAN_STALE', option.infeasible_reason ?? 'That truck is no longer available. Check the options again');
@@ -311,6 +298,18 @@ export function createOrder(ctx: Ctx, user: AuthUser, input: OrderInput, optionI
             ? `${input.quantity_t} t ${input.product} will travel with order ${s.order_id} on ${s.vehicle_reg}${option.eta ? `, expected ${istClock(option.eta)}` : ''}.`
             : `${input.quantity_t} t ${input.product} is planned on ${s.vehicle_reg}${option.eta ? `, expected ${istClock(option.eta)}` : ''}.`,
       }, hints);
+    }
+    if (user.role === 'CUSTOMER') {
+      const coordinators = db.prepare("SELECT id FROM users WHERE role = 'COORDINATOR'").all() as { id: string }[];
+      for (const c of coordinators) {
+        ctx.notifier.send(db, now, {
+          user_id: c.id,
+          shipment_id: shipmentId,
+          kind: 'ORDER_PLACED',
+          title: `${customerName(db, input.customer_id)} placed order ${orderId}`,
+          body: `${input.quantity_t} t ${input.product} on ${shipmentId} with ${option.driver_name}, leaving ${istClock(s.planned_departure)}${option.eta ? `, expected ${istClock(option.eta)}` : ''}.`,
+        }, hints);
+      }
     }
     if (s.driver_user_id) {
       ctx.notifier.send(db, now, {
