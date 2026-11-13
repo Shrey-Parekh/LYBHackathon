@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
-import { CheckCircle, Prohibit, Star } from "@phosphor-icons/react";
+import { ArrowRight, CheckCircle, Prohibit } from "@phosphor-icons/react";
 import { useCreateOrder, useNewOrderForm, usePlanOrder } from "../../api/queries";
 import type { OrderDraft, TruckOption } from "../../api/contract";
 import { Button, Card, CardHeader, EmptyState, ErrorNote, Loading, Skeleton } from "../../components/ui";
@@ -12,7 +12,8 @@ import { dateTimeTz, duration, inr } from "../../lib/time";
   for the same customer, or send a separate one), gives the reason for each, and recommends one.
   The coordinator approves; this screen never ranks or judges the options itself.
 */
-const FIELD = "h-10 w-full rounded-md border border-line bg-surface px-2 text-body text-ink";
+const FIELD = "ct-underline-input";
+const LABEL = "grid content-start gap-1 text-meta font-semibold text-ink-2";
 
 /** "2026-11-17T15:00" typed as India time -> "2026-11-17T09:30:00Z". */
 export function istInputToIso(value: string): string {
@@ -106,8 +107,9 @@ export function NewOrder() {
               </p>
             )}
             <div className="flex flex-wrap gap-3">
-              <Link to={`/coordinator/shipments/${done.shipment_id}`} className="inline-flex h-10 items-center rounded-md border border-accent bg-accent px-4 text-body font-medium text-on-accent hover:bg-accent-hover">
+              <Link to={`/coordinator/shipments/${done.shipment_id}`} className="btn-primary ct-go inline-flex h-10 items-center gap-2 rounded-md border border-accent bg-accent px-4 text-body font-semibold text-on-accent hover:bg-accent-hover">
                 Open {done.shipment_id}
+                <ArrowRight size={16} weight="bold" aria-hidden />
               </Link>
               <Button onClick={startAgain}>Add another order</Button>
             </div>
@@ -117,17 +119,17 @@ export function NewOrder() {
         <>
           <Card aria-labelledby="order-h">
             <CardHeader title="Order" id="order-h" />
-            <form onSubmit={onSubmit} className="grid gap-4 p-5 sm:grid-cols-2">
-              <label className="grid gap-1 text-meta font-medium" htmlFor="order-customer">
+            <form onSubmit={onSubmit} className="grid grid-cols-1 gap-x-8 gap-y-6 p-5 sm:grid-cols-2 sm:p-6">
+              <label className={LABEL} htmlFor="order-customer">
                 Customer
                 <select id="order-customer" className={FIELD} value={customerId} onChange={(e) => edited(setCustomerId)(e.target.value)}>
                   {form.data.customers.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
-                {customer?.deliver_to && <span className="font-normal text-muted">Deliver to: {customer.deliver_to}</span>}
+                {customer?.deliver_to && <span className="font-normal text-muted">Deliver to {customer.deliver_to}</span>}
               </label>
-              <label className="grid gap-1 text-meta font-medium" htmlFor="order-product">
+              <label className={LABEL} htmlFor="order-product">
                 Product
                 <select id="order-product" className={FIELD} value={product} onChange={(e) => edited(setProduct)(e.target.value)}>
                   {form.data.products.map((p) => (
@@ -135,16 +137,16 @@ export function NewOrder() {
                   ))}
                 </select>
               </label>
-              <label className="grid gap-1 text-meta font-medium" htmlFor="order-qty">
+              <label className={LABEL} htmlFor="order-qty">
                 Quantity (tonnes)
                 <input id="order-qty" type="number" min={0.5} max={40} step={0.5} required className={FIELD} value={quantity} onChange={(e) => edited(setQuantity)(e.target.value)} />
               </label>
-              <label className="grid gap-1 text-meta font-medium" htmlFor="order-promise">
+              <label className={LABEL} htmlFor="order-promise">
                 Promised delivery (IST)
                 <input id="order-promise" type="datetime-local" required className={FIELD} value={promise} onChange={(e) => edited(setPromise)(e.target.value)} />
               </label>
               <div className="sm:col-span-2">
-                <Button type="submit" variant={planned ? "secondary" : "primary"} disabled={!valid || plan.isPending}>
+                <Button type="submit" size="lg" variant={planned ? "secondary" : "primary"} disabled={!valid || plan.isPending}>
                   {plan.isPending ? "Checking trucks…" : planned ? "Check again" : "Find a truck"}
                 </Button>
               </div>
@@ -181,10 +183,10 @@ export function NewOrder() {
 
 function Page({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6">
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6">
       <div>
-        <h1 className="text-figure font-semibold tracking-tight">New order</h1>
-        <p className="text-body text-ink-2">If a truck is already planned for the same customer and has room, the order can ride with it.</p>
+        <h1 className="text-figure font-[750] tracking-[-0.025em]">New order</h1>
+        <p className="mt-1 max-w-[62ch] text-body text-muted">If a truck is already planned for the same customer and has room, the order rides with it. Nothing is assigned until you approve a truck.</p>
       </div>
       {children}
     </div>
@@ -195,7 +197,34 @@ function Page({ children }: { children: React.ReactNode }) {
 export function TruckOptions({ options, promisedBy, busy, onApprove }: { options: TruckOption[]; promisedBy: string; busy?: boolean; onApprove: (o: TruckOption) => void }) {
   const rows = [...options.filter((o) => o.recommended), ...options.filter((o) => !o.recommended)];
   return (
-    <div className="overflow-x-auto">
+    <>
+      <ul className="divide-y divide-line md:hidden">
+        {rows.map((o) => (
+          <li key={o.id} className={`border-l-4 px-4 py-4 ${o.recommended ? "border-accent bg-accent-soft" : "border-transparent"}`}>
+            {o.recommended && <p className="text-meta font-semibold text-ink">Recommended</p>}
+            <p className={`font-semibold ${o.feasible ? "text-ink" : "text-muted"}`}>{o.label}</p>
+            {o.transporter_name && <p className="text-meta text-muted">{o.transporter_name}</p>}
+            {o.feasible ? (
+              <>
+                <dl className="tnum mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-body">
+                  <div><dt className="text-meta text-muted">Expected</dt><dd className="font-semibold">{dateTimeTz(o.eta)}</dd></div>
+                  <div><dt className="text-meta text-muted">Against promise</dt><dd>{o.margin_min !== null ? `${duration(o.margin_min)} ${o.margin_min >= 0 ? "early" : "late"}` : "—"}</dd></div>
+                  <div><dt className="text-meta text-muted">Load after</dt><dd>{o.load_after_t !== null ? `${o.load_after_t} of ${o.capacity_t} t` : "—"}</dd></div>
+                  <div><dt className="text-meta text-muted">Trip saved</dt><dd>{o.km_saved !== null ? `${o.km_saved} km, ${inr(o.cost_saved_inr ?? 0)}` : "—"}</dd></div>
+                </dl>
+                <Button className="mt-3 w-full" variant={o.recommended ? "primary" : "secondary"} disabled={busy} onClick={() => onApprove(o)}>
+                  Approve<span className="sr-only">: {o.label}</span>
+                </Button>
+              </>
+            ) : (
+              <p className="mt-1 flex items-start gap-1 text-meta text-ink-2">
+                <Prohibit size={14} weight="bold" aria-hidden className="mt-0.5 shrink-0" /> Not available: {o.infeasible_reason}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+      <div className="hidden overflow-x-auto md:block">
       <table className="tnum w-full min-w-[820px] text-body">
         <caption className="sr-only">Trucks that could carry this order, promised by {dateTimeTz(promisedBy)}. Recommended first.</caption>
         <thead>
@@ -215,11 +244,7 @@ export function TruckOptions({ options, promisedBy, busy, onApprove }: { options
           {rows.map((o) => (
             <tr key={o.id} className={`border-b border-line last:border-0 ${o.recommended ? "bg-accent-soft" : ""} ${o.feasible ? "" : "text-muted"}`}>
               <th scope="row" className={`px-5 py-3 text-left font-normal ${o.recommended ? "border-l-4 border-accent" : "border-l-4 border-transparent"}`}>
-                {o.recommended && (
-                  <span className="mb-1 flex items-center gap-1 text-meta font-semibold text-accent">
-                    <Star size={14} weight="fill" aria-hidden /> Recommended
-                  </span>
-                )}
+                {o.recommended && <span className="mb-1 block text-meta font-semibold text-ink">Recommended</span>}
                 <span className={`block font-medium ${o.feasible ? "text-ink" : "text-muted"}`}>{o.label}</span>
                 {o.transporter_name && <span className="block text-meta text-muted">{o.transporter_name}</span>}
                 {!o.feasible && (
@@ -229,11 +254,11 @@ export function TruckOptions({ options, promisedBy, busy, onApprove }: { options
                   </span>
                 )}
               </th>
-              <td className="py-3 pr-4">{o.feasible && o.load_after_t !== null ? `${o.load_after_t} of ${o.capacity_t} t` : "—"}</td>
+              <td className="whitespace-nowrap py-3 pr-4">{o.feasible && o.load_after_t !== null ? `${o.load_after_t} of ${o.capacity_t} t` : "—"}</td>
               <td className="py-3 pr-4">{o.feasible ? dateTimeTz(o.planned_departure) : "—"}</td>
               <td className="py-3 pr-4 font-semibold">{o.feasible ? dateTimeTz(o.eta) : "—"}</td>
-              <td className="py-3 pr-4">{o.feasible && o.margin_min !== null ? `${duration(o.margin_min)} ${o.margin_min >= 0 ? "early" : "late"}` : "—"}</td>
-              <td className="py-3 pr-4 text-right">{o.feasible && o.km_saved !== null ? `${o.km_saved} km · ${inr(o.cost_saved_inr ?? 0)}` : "—"}</td>
+              <td className="whitespace-nowrap py-3 pr-4">{o.feasible && o.margin_min !== null ? `${duration(o.margin_min)} ${o.margin_min >= 0 ? "early" : "late"}` : "—"}</td>
+              <td className="whitespace-nowrap py-3 pr-4 text-right">{o.feasible && o.km_saved !== null ? `${o.km_saved} km, ${inr(o.cost_saved_inr ?? 0)}` : "—"}</td>
               <td className="py-3 pr-5 text-right">
                 {o.feasible ? (
                   <Button variant={o.recommended ? "primary" : "secondary"} size="sm" disabled={busy} onClick={() => onApprove(o)}>
@@ -247,6 +272,7 @@ export function TruckOptions({ options, promisedBy, busy, onApprove }: { options
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   );
 }

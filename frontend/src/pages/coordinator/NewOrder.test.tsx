@@ -66,7 +66,7 @@ describe("NewOrder", () => {
     expect(rows[0]).toHaveTextContent("Add to SHP-1004");
     expect(rows[0]).toHaveTextContent("26 of 28 t");
     expect(rows[0]).toHaveTextContent("3 h 15 min early");
-    expect(rows[0]).toHaveTextContent("150 km · ₹6,750");
+    expect(rows[0]).toHaveTextContent("150 km, ₹6,750");
     expect(rows[1]).toHaveTextContent("Not available: This truck has already left the plant");
     expect(within(rows[1]).queryByRole("button")).not.toBeInTheDocument();
     expect(rows[2]).toHaveTextContent("Send a separate truck (MH 99 KR 3048)");

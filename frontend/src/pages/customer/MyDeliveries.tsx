@@ -143,8 +143,9 @@ function PastDeliveries({ past }: { past: ShipmentSummary[] }) {
           return (
             <li key={s.id}>
               <Link to={`/customer/shipments/${s.id}`} className="ct-go flex flex-wrap items-center gap-x-4 gap-y-1 px-2 py-3 transition-colors duration-150 hover:bg-raised">
-                <span className="w-28 shrink-0 text-body font-semibold text-ink">{s.order_id}</span>
-                <span className="tnum min-w-0 flex-1 text-body text-ink-2">{s.arrived_at ? `Delivered ${dateTimeTz(s.arrived_at)}` : "Delivered"}</span>
+                <span className="shrink-0 text-body font-semibold text-ink sm:w-28">{s.order_id}</span>
+                <span className="tnum order-last basis-full text-meta text-ink-2 sm:order-none sm:min-w-0 sm:flex-1 sm:basis-auto sm:text-body">{s.arrived_at ? `Delivered ${dateTimeTz(s.arrived_at)}` : "Delivered"}</span>
+                <span className="ml-auto flex items-center gap-3">
                 {late !== null &&
                   (late <= 0 ? (
                     <span className="inline-flex items-center gap-1 text-meta font-semibold text-low">
@@ -156,6 +157,7 @@ function PastDeliveries({ past }: { past: ShipmentSummary[] }) {
                     </span>
                   ))}
                 <ArrowRight size={14} weight="bold" aria-hidden className="shrink-0 text-muted" />
+                </span>
               </Link>
             </li>
           );

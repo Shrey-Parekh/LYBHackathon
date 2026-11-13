@@ -50,12 +50,12 @@ export function InvoiceCard({ shipment, canUpload = false }: { shipment: Shipmen
       <CardHeader title="Invoice" id={headingId} />
       <div className="space-y-3 p-5">
         {invoice ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <FilePdf size={28} aria-hidden className="shrink-0 text-accent" />
+          <div className="flex flex-wrap items-center gap-3 border-l-[3px] border-accent pl-3">
+            <FilePdf size={28} aria-hidden className="shrink-0 text-ink-2" />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-body font-medium text-ink">{invoice.filename}</p>
+              <p className="truncate text-body font-semibold text-ink" title={invoice.filename}>{invoice.filename}</p>
               <p className="tnum text-meta text-muted">
-                {fileSize(invoice.size_bytes)} · Uploaded {dateTimeTz(invoice.uploaded_at)}
+                {fileSize(invoice.size_bytes)}, added {dateTimeTz(invoice.uploaded_at)}
                 {canUpload && ` by ${invoice.uploaded_by_name}`}
               </p>
             </div>
@@ -87,12 +87,12 @@ export function InvoiceCard({ shipment, canUpload = false }: { shipment: Shipmen
               <UploadSimple size={16} weight="bold" aria-hidden />
               {upload.isPending ? "Uploading…" : invoice ? "Replace with a PDF" : "Upload PDF"}
             </Button>
-            <p className="basis-full text-meta text-muted">Generated invoices use fictional rates. Uploads: PDF only, up to 2 MB.</p>
+            <p className="basis-full text-meta text-muted">Generated invoices use fictional rates. Uploads must be a PDF of 2 MB or less.</p>
           </div>
         )}
 
-        {(upload.isSuccess || generate.isSuccess) && !saving && !error && <p role="status" className="text-meta text-low">Invoice saved. The customer has been notified.</p>}
-        {error && <p role="alert" className="rounded-md bg-high-soft px-3 py-2 text-meta text-high">{error}</p>}
+        {(upload.isSuccess || generate.isSuccess) && !saving && !error && <p role="status" className="text-meta font-semibold text-low">Invoice saved. The customer has been notified.</p>}
+        {error && <p role="alert" className="border-l-4 border-high bg-high-soft px-3 py-2 text-body text-high">{error}</p>}
       </div>
     </Card>
   );

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowBendDownLeft, ChartBar, House, MagnifyingGlass, Moon, Notebook, SignOut, SlidersHorizontal, Truck, WarningDiamond, type Icon } from "@phosphor-icons/react";
+import { ArrowBendDownLeft, ChartBar, House, MagnifyingGlass, Moon, Notebook, PlusCircle, SignOut, SlidersHorizontal, Truck, WarningDiamond, type Icon } from "@phosphor-icons/react";
 import { setSession, useSession } from "../auth/session";
 import { useShipments } from "../api/queries";
 import type { Role } from "../api/contract";
@@ -30,6 +30,7 @@ const PAGES: Record<Role, { label: string; to: string; icon: Icon }[]> = {
     { label: "Attention queue", to: "/coordinator", icon: WarningDiamond },
     { label: "Performance dashboard", to: "/coordinator/dashboard", icon: ChartBar },
     { label: "Decision ledger", to: "/coordinator/ledger", icon: Notebook },
+    { label: "New order", to: "/coordinator/orders/new", icon: PlusCircle },
     ...(DEMO_MODE ? [{ label: "Demo controls", to: "/coordinator/demo", icon: SlidersHorizontal }] : []),
   ],
   DRIVER: [

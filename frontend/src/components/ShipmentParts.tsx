@@ -149,10 +149,11 @@ export function ExtraOrders({ shipment }: { shipment: { order: { id: string }; e
   return (
     <div className="border-t border-line px-5 py-4">
       <h3 className="text-meta font-semibold text-ink">Also on this truck</h3>
-      <ul className="mt-1 space-y-1">
+      <ul className="mt-2 space-y-2">
         {shipment.extra_orders.map((o) => (
-          <li key={o.id} className="tnum text-body text-ink-2">
-            <span className="font-medium text-ink">{o.id}</span> · {o.quantity_t} t {o.product} · promised {dateTimeTz(o.promised_by)}
+          <li key={o.id} className="tnum border-l-[3px] border-accent pl-3 text-body text-ink-2">
+            <span className="font-semibold text-ink">{o.id}</span>, {o.quantity_t} t {o.product}
+            <span className="block text-meta text-muted">Promised {dateTimeTz(o.promised_by)}</span>
           </li>
         ))}
       </ul>

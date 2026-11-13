@@ -38,7 +38,7 @@ describe("InvoiceCard", () => {
     client.downloadInvoice.mockResolvedValue(undefined);
     renderCard(META);
     expect(screen.getByText("INV-5001.pdf")).toBeInTheDocument();
-    expect(screen.getByText(/47 KB · Uploaded/)).toBeInTheDocument();
+    expect(screen.getByText(/47 KB, added/)).toBeInTheDocument();
     expect(screen.queryByText(/Meera Kulkarni/)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Download" }));
     expect(client.downloadInvoice).toHaveBeenCalledWith("SHP-1001", "INV-5001.pdf");

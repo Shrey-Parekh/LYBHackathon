@@ -29,7 +29,7 @@ describe("AssistantChat", () => {
     expect(screen.getByRole("region", { name: "Assistant" })).toBeInTheDocument();
     expect(screen.getByText(/AI answers from the shipments you can see/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Where is my order?" })).toBeInTheDocument();
-    expect(await screen.findByText("Answers by Groq · test-model")).toBeInTheDocument();
+    expect(await screen.findByText("Answers by Groq, model test-model")).toBeInTheDocument();
   });
 
   it("sends the question with the earlier turns and shows the answer", async () => {

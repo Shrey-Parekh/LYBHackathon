@@ -216,6 +216,7 @@
 .leaflet-container {
   background: var(--sunken);
   font-family: var(--font-sans);
+  isolation: isolate; /* keep Leaflet's z-index layers inside the map, under menus */
 }
 .leaflet-control-attribution {
   font-size: 11px;
