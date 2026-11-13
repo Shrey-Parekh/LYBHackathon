@@ -18,6 +18,7 @@ const FORM: NewOrderForm = {
 const base: TruckOption = {
   id: "", type: "NEW_TRUCK", label: "", feasible: true, infeasible_reason: null, recommended: false, shipment_id: null, vehicle_reg: null, transporter_name: null,
   capacity_t: null, load_after_t: null, spare_after_t: null, planned_departure: null, eta: null, margin_min: null, km_saved: null, cost_saved_inr: null,
+  driver_name: null, note: null,
 };
 const PLAN: OrderPlan = {
   recommended_option_id: "ADD-SHP-1004",
@@ -25,7 +26,7 @@ const PLAN: OrderPlan = {
     { ...base, id: "ADD-SHP-1001", type: "ADD_TO_TRUCK", label: "Add to SHP-1001 (MH 99 SB 4127), already going to this customer", feasible: false, infeasible_reason: "This truck has already left the plant" },
     { ...base, id: "ADD-SHP-1004", type: "ADD_TO_TRUCK", label: "Add to SHP-1004 (MH 99 SB 4385), already going to this customer", recommended: true, shipment_id: "SHP-1004", vehicle_reg: "MH 99 SB 4385",
       capacity_t: 28, load_after_t: 26, spare_after_t: 2, planned_departure: "2026-11-17T03:00:00Z", eta: "2026-11-17T06:15:00Z", margin_min: 195, km_saved: 150, cost_saved_inr: 6750 },
-    { ...base, id: "NEW-TRUCK", label: "Send a separate truck (MH 99 KR 3048)", vehicle_reg: "MH 99 KR 3048", capacity_t: 20, load_after_t: 6, spare_after_t: 14,
+    { ...base, id: "NEW-USR-DRV-02", label: "Separate truck MH 99 KR 3048 with Gurpreet Sandhu", driver_name: "Gurpreet Sandhu", note: "Leaves after Gurpreet is back from SHP-1005", vehicle_reg: "MH 99 KR 3048", capacity_t: 20, load_after_t: 6, spare_after_t: 14,
       planned_departure: "2026-11-17T05:50:00Z", eta: "2026-11-17T08:35:00Z", margin_min: 55 },
   ],
 };
@@ -69,7 +70,7 @@ describe("NewOrder", () => {
     expect(rows[0]).toHaveTextContent("150 km, ₹6,750");
     expect(rows[1]).toHaveTextContent("Not available: This truck has already left the plant");
     expect(within(rows[1]).queryByRole("button")).not.toBeInTheDocument();
-    expect(rows[2]).toHaveTextContent("Send a separate truck (MH 99 KR 3048)");
+    expect(rows[2]).toHaveTextContent("Separate truck MH 99 KR 3048 with Gurpreet Sandhu");
 
     await userEvent.click(within(rows[0]).getByRole("button", { name: /Approve/ }));
     await waitFor(() => expect(api).toHaveBeenLastCalledWith("/orders", { method: "POST", body: { ...draft, option_id: "ADD-SHP-1004" } }));

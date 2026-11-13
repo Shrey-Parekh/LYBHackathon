@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Bell } from "@phosphor-icons/react";
+import { useNavigate } from "react-router";
+import { useSession } from "../auth/session";
 import { useMarkRead, useNotifications } from "../api/queries";
 import { dateTimeTz } from "../lib/time";
 import { CrossFade } from "./ui";
@@ -13,6 +15,11 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
   const { data } = useNotifications();
   const markRead = useMarkRead();
   const toast = useToast();
+  const navigate = useNavigate();
+  const role = useSession()?.user.role;
+  /** Where a notification about this shipment leads, for this role. */
+  const target = (id: string | null) =>
+    !id ? null : role === "COORDINATOR" ? `/coordinator/shipments/${id}` : role === "CUSTOMER" ? `/customer/shipments/${id}` : role === "DRIVER" ? `/driver?trip=${id}` : null;
   const [open, setOpen] = useState(false);
   const seen = useRef<Set<string> | null>(null);
   const menuId = useId();
@@ -83,7 +90,14 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
                 <li key={n.id} className="border-b border-line last:border-0">
                   <button
                     type="button"
-                    onClick={() => !n.read_at && markRead.mutate(n.id)}
+                    onClick={() => {
+                      if (!n.read_at) markRead.mutate(n.id);
+                      const to = target(n.shipment_id);
+                      if (to) {
+                        setOpen(false);
+                        navigate(to);
+                      }
+                    }}
                     className="flex w-full gap-3 px-4 py-3 text-left hover:bg-sunken"
                   >
                     <span aria-hidden className={`mt-2 h-2 w-2 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-accent"}`} />

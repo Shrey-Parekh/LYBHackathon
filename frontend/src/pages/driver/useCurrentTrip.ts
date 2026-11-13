@@ -1,13 +1,16 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router";
 import { useShipment, useShipments } from "../../api/queries";
 import { getOutbox, onOutboxSent, useOutbox } from "../../api/outbox";
 
-/** Show the moving or arrived trip ahead of future assignments. */
+/** The trip chosen in the URL (?trip=), else the moving or arrived trip ahead of future assignments. */
 export function useCurrentTrip() {
   const list = useShipments();
+  const [params] = useSearchParams();
+  const chosen = list.data?.find((s) => s.id === params.get("trip"));
   const moving = list.data?.filter((s) => s.status === "IN_TRANSIT" || s.status === "ARRIVED");
-  const current = moving?.find((s) => s.live_demo) ?? moving?.[0]
+  const current = chosen ?? moving?.find((s) => s.live_demo) ?? moving?.[0]
     ?? list.data?.find((s) => s.status === "PLANNED" || s.status === "DISPATCHED");
   const currentId = current?.id;
   const detail = useShipment(currentId);

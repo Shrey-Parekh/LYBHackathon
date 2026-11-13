@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AssistantChat } from "./AssistantChat";
+import { Answer, AssistantChat } from "./AssistantChat";
 import { ApiError } from "../api/client";
 
 const api = vi.hoisted(() => vi.fn());
@@ -79,5 +79,16 @@ describe("AssistantChat", () => {
     await userEvent.click(screen.getByRole("button", { name: "Ask the assistant" }));
     expect(await screen.findByText(/The assistant is switched off/)).toBeInTheDocument();
     expect(screen.getByLabelText("Your question")).toBeDisabled();
+  });
+});
+
+describe("Answer", () => {
+  it("shows the model's answer as a sentence, a list and a Next line, with bold ids", () => {
+    const { container } = render(<Answer text={"You have 2 deliveries on the way.\n- **SHP-1001**: in transit, due **11:15 IST**\n- **SHP-1004**: planned\nNext: nothing to do."} />);
+    expect(screen.getByText("You have 2 deliveries on the way.")).toBeInTheDocument();
+    expect(container.querySelectorAll("li")).toHaveLength(2);
+    expect(screen.getByText("SHP-1001").tagName).toBe("STRONG");
+    expect(screen.getByText("nothing to do.").closest("p")).toHaveTextContent("Next: nothing to do.");
+    expect(container.textContent).not.toContain("**");
   });
 });

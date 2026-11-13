@@ -26,6 +26,7 @@ export const NotificationKind = z.enum([
   'DRIVER_STOP',
   'INVOICE_READY',
   'ORDER_CONFIRMED',
+  'NEW_TRIP',
 ]);
 
 export const ErrorResponse = z.object({
@@ -240,6 +241,8 @@ export const ShipmentSummary = z.object({
   current_eta: EtaSnapshot.nullable(),
   open_alert: Alert.nullable(),
   open_alert_id: z.string().nullable(),
+  // Orders added to this truck after it was planned (order_id stays the truck's first order).
+  extra_order_ids: z.array(z.string()),
   version: z.number().int(),
   live_demo: z.boolean().optional(),
 });
@@ -542,6 +545,8 @@ export const TruckOption = z.object({
   margin_min: z.number().nullable(),
   km_saved: z.number().nullable(),
   cost_saved_inr: z.number().nullable(),
+  driver_name: z.string().nullable(),
+  note: z.string().nullable(),
 });
 export const OrderPlan = z.object({ options: z.array(TruckOption), recommended_option_id: z.string().nullable() });
 export const OrderCreated = z.object({ order_id: z.string(), shipment_id: z.string(), option: TruckOption });

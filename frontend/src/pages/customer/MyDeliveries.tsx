@@ -96,7 +96,7 @@ function DeliveryCard({ s, route }: { s: ShipmentSummary; route: ReturnType<type
     <Link to={`/customer/shipments/${s.id}`} className="flex h-full flex-col rounded-lg border border-line bg-surface p-5 transition-colors duration-150 hover:border-ink sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-meta text-muted">Order {s.order_id}</p>
+          <p className="text-meta text-muted">Order {s.order_id}{s.extra_order_ids?.length ? ` + ${s.extra_order_ids.join(", ")}` : ""}</p>
           <p className="mt-0.5 truncate text-body font-medium text-ink">{s.destination_name}</p>
         </div>
         {eta && <RiskBadge level={eta.risk_level} />}

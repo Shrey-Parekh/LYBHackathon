@@ -241,6 +241,8 @@ export interface ShipmentSummary {
   last_position: Position | null;
   current_eta: EtaSnapshot | null;
   open_alert: Alert | null;
+  /** Orders added to this truck after it was planned. */
+  extra_order_ids?: string[];
   version: number;
   live_demo?: boolean;
   /** When the truck arrived (finished shipments), and the promise that on-time is judged against. */
@@ -348,7 +350,7 @@ export interface Notification {
   id: string;
   user_id: string;
   shipment_id: string | null;
-  kind: "RISK_MEDIUM" | "RISK_HIGH" | "DECISION_APPLIED" | "BACK_ON_SCHEDULE" | "TRACKING_LOST" | "DELIVERED" | "DELIVERY_PHOTO" | "DELIVERY_VERIFIED" | "CHECKIN_REQUEST" | "CHECKIN_REPLY" | "DRIVER_STOP" | "INVOICE_READY" | "ORDER_CONFIRMED";
+  kind: "RISK_MEDIUM" | "RISK_HIGH" | "DECISION_APPLIED" | "BACK_ON_SCHEDULE" | "TRACKING_LOST" | "DELIVERED" | "DELIVERY_PHOTO" | "DELIVERY_VERIFIED" | "CHECKIN_REQUEST" | "CHECKIN_REPLY" | "DRIVER_STOP" | "INVOICE_READY" | "ORDER_CONFIRMED" | "NEW_TRIP";
   title: string;
   body: string;
   created_at: string;
@@ -469,6 +471,8 @@ export interface TruckOption {
   margin_min: number | null;
   km_saved: number | null;
   cost_saved_inr: number | null;
+  driver_name: string | null;
+  note: string | null;
 }
 export interface OrderPlan {
   options: TruckOption[];

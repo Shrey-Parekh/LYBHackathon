@@ -128,10 +128,10 @@ export function AssistantChat({ role }: { role: Role }) {
               <ul className="space-y-3">
                 {turns.map((t, i) => (
                   <li key={i} className={`flex ${t.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <p className={`whitespace-pre-wrap break-words text-body ${t.role === "user" ? "max-w-[85%] rounded-lg rounded-br-sm bg-ink px-3 py-2 text-surface" : "max-w-[92%] border-l-[3px] border-accent py-0.5 pl-3 text-ink"}`}>
+                    <div className={`break-words text-body ${t.role === "user" ? "whitespace-pre-wrap " : ""}${t.role === "user" ? "max-w-[85%] rounded-lg rounded-br-sm bg-ink px-3 py-2 text-surface" : "max-w-[92%] border-l-[3px] border-accent py-0.5 pl-3 text-ink"}`}>
                       <span className="sr-only">{t.role === "user" ? "You: " : "Assistant: "}</span>
-                      {t.role === "assistant" ? withBold(t.content) : t.content}
-                    </p>
+                      {t.role === "assistant" ? <Answer text={t.content} /> : t.content}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -176,7 +176,51 @@ export function AssistantChat({ role }: { role: Role }) {
   );
 }
 
-/** The model marks key facts with **bold**; show that as bold text instead of asterisks. Nothing else is parsed. */
+/** **bold** inside a line. Nothing else inline is parsed. */
 function withBold(text: string) {
-  return text.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <strong key={i} className="font-semibold">{part}</strong> : part));
+  return text.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <strong key={i} className="font-semibold text-ink">{part}</strong> : part));
+}
+
+/**
+  The answer as short blocks: paragraphs, "- " or "1. " lists, and a "Next:" line set apart.
+  The prompt asks the model for that shape (backend/src/assistant/assistant.ts); anything else shows as plain lines.
+*/
+export function Answer({ text }: { text: string }) {
+  const lines = text.replace(/\r/g, "").split("\n").map((l) => l.trim()).filter((l) => l && !/^\|?[-:| ]+\|?$/.test(l) && !/^#+\s*$/.test(l));
+  const blocks: { kind: "p" | "li" | "next"; text: string }[] = lines.map((l) => {
+    const item = l.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/);
+    if (item) return { kind: "li", text: item[1] };
+    const next = l.match(/^\**next:?\**:?\s*(.*)$/i);
+    if (next) return { kind: "next", text: next[1] };
+    return { kind: "p", text: l.replace(/^#+\s*/, "").replace(/^\|(.*)\|$/, "$1").replace(/\s*\|\s*/g, ", ") };
+  });
+  const out: React.ReactNode[] = [];
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if (b.kind === "li") {
+      const items: string[] = [];
+      while (i < blocks.length && blocks[i].kind === "li") items.push(blocks[i++].text);
+      i--;
+      out.push(
+        <ul key={i} className="space-y-1.5">
+          {items.map((it, j) => (
+            <li key={j} className="flex gap-2">
+              <span aria-hidden className="mt-[0.55em] h-1.5 w-1.5 shrink-0 rounded-full bg-ink-2" />
+              <span className="min-w-0">{withBold(it)}</span>
+            </li>
+          ))}
+        </ul>,
+      );
+    } else if (b.kind === "next") {
+      out.push(
+        <p key={i} className="rounded-md bg-accent-soft px-2.5 py-1.5 text-ink">
+          <span className="font-semibold">Next: </span>
+          {withBold(b.text)}
+        </p>,
+      );
+    } else {
+      out.push(<p key={i}>{withBold(b.text)}</p>);
+    }
+  }
+  return <span className="block space-y-2">{out}</span>;
 }

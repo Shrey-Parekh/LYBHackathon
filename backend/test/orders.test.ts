@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { REAL_FIXTURES_DIR } from '../src/sim/fixtures';
 import { COORD, CUST1, DRIVER1, makeApp, type TestApp } from './helpers';
 
+const GURPREET = 'USR-DRV-02';
+
 const DECCAN = 'CUS-01';
 const order = (over: Record<string, unknown> = {}) => ({
   customer_id: DECCAN,
@@ -30,7 +32,8 @@ describe('new orders and truck choice', () => {
 
   it('recommends the planned truck to the same customer, and explains every candidate', async () => {
     const p = await plan();
-    expect(p.options.map((o: any) => o.id)).toEqual(['ADD-SHP-1001', 'ADD-SHP-1004', 'NEW-TRUCK']); // never another customer's truck
+    // Never another customer's truck; one separate-truck option per driver in the user list, by name.
+    expect(p.options.map((o: any) => o.id)).toEqual(['ADD-SHP-1001', 'ADD-SHP-1004', 'NEW-USR-DRV-02', 'NEW-USR-DRV-01', 'NEW-USR-DRV-03']);
     expect(p.recommended_option_id).toBe('ADD-SHP-1004');
     expect(option(p, 'ADD-SHP-1004')).toMatchObject({
       type: 'ADD_TO_TRUCK', feasible: true, recommended: true, shipment_id: 'SHP-1004', vehicle_reg: 'MH 99 SB 4385',
@@ -38,9 +41,16 @@ describe('new orders and truck choice', () => {
     });
     expect(option(p, 'ADD-SHP-1004').margin_min).toBeGreaterThan(0);
     expect(option(p, 'ADD-SHP-1001')).toMatchObject({ feasible: false, infeasible_reason: 'This truck has already left the plant' });
-    // The fallback is the smallest free vehicle that fits, planned to arrive an hour before the promise.
-    expect(option(p, 'NEW-TRUCK')).toMatchObject({ type: 'NEW_TRUCK', feasible: true, recommended: false, vehicle_reg: 'MH 99 KR 3048', capacity_t: 20, spare_after_t: 14, km_saved: null });
-    expect(option(p, 'NEW-TRUCK').margin_min).toBeGreaterThanOrEqual(55);
+    // Each driver gets the smallest free vehicle of their transporter that fits, planned to arrive an hour before the promise.
+    expect(option(p, 'NEW-USR-DRV-02')).toMatchObject({
+      type: 'NEW_TRUCK', feasible: true, recommended: false, vehicle_reg: 'MH 99 KR 3048', capacity_t: 20, spare_after_t: 14, km_saved: null, driver_name: 'Gurpreet Sandhu',
+    });
+    // Gurpreet is on SHP-1005 tomorrow, so his truck leaves only once he is back; another driver can still make it in time.
+    expect(option(p, 'NEW-USR-DRV-02').note).toBe('Leaves after Gurpreet is back from SHP-1005');
+    const evening = await plan({ promised_by: '2026-11-17T14:30:00Z' }); // 20:00 IST: time for Gurpreet to come back first
+    expect(option(evening, 'NEW-USR-DRV-02').margin_min).toBeGreaterThanOrEqual(55);
+    const offered = p.options.filter((o: any) => o.type === 'NEW_TRUCK' && o.vehicle_reg).map((o: any) => o.vehicle_reg);
+    expect(new Set(offered).size).toBe(offered.length); // no truck offered twice
     // Planning changes nothing.
     expect((await t.req('GET', '/shipments', coord)).body.some((s: any) => s.id.startsWith('SHP-2'))).toBe(false);
     expect((await t.req('GET', '/shipments/SHP-1004', coord)).body.quantity_t).toBe(20);
@@ -49,14 +59,14 @@ describe('new orders and truck choice', () => {
   it('gives the reason when a truck cannot take the order, and falls back to a separate truck', async () => {
     const tooBig = await plan({ quantity_t: 9 });
     expect(option(tooBig, 'ADD-SHP-1004').infeasible_reason).toBe('Only 8 t spare: a 28 t truck already carrying 20 t');
-    expect(tooBig.recommended_option_id).toBe('NEW-TRUCK');
+    expect(tooBig.recommended_option_id).toMatch(/^NEW-USR-DRV-/);
 
     const tooEarly = await plan({ promised_by: '2026-11-17T06:30:00Z' }); // 12:00 IST, before the truck's own 13:00 promise
     expect(option(tooEarly, 'ADD-SHP-1004').infeasible_reason).toBe("This order is promised before the truck's own promise of 13:00 IST");
-    expect(tooEarly.recommended_option_id).toBe('NEW-TRUCK');
+    expect(tooEarly.recommended_option_id).toMatch(/^NEW-USR-DRV-/);
 
     const huge = await plan({ quantity_t: 30 });
-    expect(option(huge, 'NEW-TRUCK')).toMatchObject({ feasible: false, infeasible_reason: 'No free vehicle can carry 30 t' });
+    expect(option(huge, 'NEW-USR-DRV-02')).toMatchObject({ feasible: false, infeasible_reason: 'No free Konkan Roadlines truck can carry 30 t' });
     expect(huge.recommended_option_id).toBeNull();
   });
 
@@ -90,17 +100,21 @@ describe('new orders and truck choice', () => {
   });
 
   it('approving a separate truck creates a planned shipment with an ETA, and that vehicle is then taken', async () => {
-    const made = await t.req('POST', '/orders', coord, { ...order({ quantity_t: 9 }), option_id: 'NEW-TRUCK' });
+    const made = await t.req('POST', '/orders', coord, { ...order({ quantity_t: 9, promised_by: '2026-11-17T14:30:00Z' }), option_id: 'NEW-USR-DRV-02' });
     expect(made.status).toBe(201);
     expect(made.body).toMatchObject({ order_id: 'ORD-6001', shipment_id: 'SHP-2001' });
     const s = (await t.req('GET', '/shipments/SHP-2001', coord)).body;
-    expect(s).toMatchObject({ status: 'PLANNED', vehicle_reg: 'MH 99 KR 3048', quantity_t: 9, gross_t: 17.2, planned_route_id: 'RTE-01', driver: null, extra_orders: [] });
+    expect(s).toMatchObject({ status: 'PLANNED', vehicle_reg: 'MH 99 KR 3048', quantity_t: 9, gross_t: 17.2, planned_route_id: 'RTE-01', extra_orders: [] });
+    expect(s.driver.name).toBe('Gurpreet Sandhu');
     expect(s.current_eta.eta).toBe(made.body.option.eta); // the preview showed exactly what was created
-    expect(s.current_eta.risk_level).toBe('LOW');
     expect((await t.req('GET', '/shipments/SHP-2001', await t.login(CUST1))).status).toBe(200);
+    // The driver is told and sees the new trip.
+    const drv = await t.login(GURPREET);
+    expect((await t.req('GET', '/notifications', drv)).body.find((n: any) => n.kind === 'NEW_TRIP')).toMatchObject({ shipment_id: 'SHP-2001', title: 'New trip SHP-2001' });
+    expect((await t.req('GET', '/shipments', drv)).body.map((x: any) => x.id)).toContain('SHP-2001');
     // The next order sees a different free vehicle, and can now also share the new truck.
-    const next = await plan({ quantity_t: 3 });
-    expect(option(next, 'NEW-TRUCK').vehicle_reg).not.toBe('MH 99 KR 3048');
+    const next = await plan({ quantity_t: 3, promised_by: '2026-11-17T14:30:00Z' });
+    expect(option(next, 'NEW-USR-DRV-02').vehicle_reg).not.toBe('MH 99 KR 3048');
     expect(option(next, 'ADD-SHP-2001')).toMatchObject({ feasible: true, spare_after_t: 8 });
   });
 

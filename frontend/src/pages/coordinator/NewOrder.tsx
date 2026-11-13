@@ -97,8 +97,8 @@ export function NewOrder() {
               <CheckCircle size={20} weight="bold" aria-hidden className="mt-0.5 shrink-0 text-low" />
               <span>
                 <span className="font-semibold">{done.order_id}</span>{" "}
-                {done.option.type === "ADD_TO_TRUCK" ? `travels on ${done.shipment_id} (${done.option.vehicle_reg}) with the order already planned.` : `has its own truck, ${done.option.vehicle_reg} (${done.shipment_id}).`}{" "}
-                The customer has been notified.
+                {done.option.type === "ADD_TO_TRUCK" ? `travels on ${done.shipment_id} (${done.option.vehicle_reg}) with the order already planned.` : `has its own truck, ${done.option.vehicle_reg} (${done.shipment_id}), driven by ${done.option.driver_name}.`}{" "}
+                {done.option.driver_name ? `${done.option.driver_name.split(" ")[0]} and the customer have been notified.` : "The customer has been notified."}
               </span>
             </p>
             {done.option.km_saved !== null && (
@@ -204,6 +204,7 @@ export function TruckOptions({ options, promisedBy, busy, onApprove }: { options
             {o.recommended && <p className="text-meta font-semibold text-ink">Recommended</p>}
             <p className={`font-semibold ${o.feasible ? "text-ink" : "text-muted"}`}>{o.label}</p>
             {o.transporter_name && <p className="text-meta text-muted">{o.transporter_name}</p>}
+            {o.feasible && o.note && <p className="text-meta text-ink-2">{o.note}</p>}
             {o.feasible ? (
               <>
                 <dl className="tnum mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-body">
@@ -246,7 +247,8 @@ export function TruckOptions({ options, promisedBy, busy, onApprove }: { options
               <th scope="row" className={`px-5 py-3 text-left font-normal ${o.recommended ? "border-l-4 border-accent" : "border-l-4 border-transparent"}`}>
                 {o.recommended && <span className="mb-1 block text-meta font-semibold text-ink">Recommended</span>}
                 <span className={`block font-medium ${o.feasible ? "text-ink" : "text-muted"}`}>{o.label}</span>
-                {o.transporter_name && <span className="block text-meta text-muted">{o.transporter_name}</span>}
+                {o.transporter_name && <span className="block text-meta text-muted">{o.transporter_name}{o.type === "ADD_TO_TRUCK" && o.driver_name ? `, driver ${o.driver_name}` : ""}</span>}
+                {o.feasible && o.note && <span className="block text-meta text-ink-2">{o.note}</span>}
                 {!o.feasible && (
                   <span className="mt-0.5 inline-flex items-start gap-1 text-meta text-ink-2">
                     <Prohibit size={14} weight="bold" aria-hidden className="mt-0.5 shrink-0" />

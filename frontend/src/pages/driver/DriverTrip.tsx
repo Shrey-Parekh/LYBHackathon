@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { ArrowsSplit, CloudSlash, Warning, CheckCircle, X } from "@phosphor-icons/react";
 import { useMarkRead, useNotifications } from "../../api/queries";
 import { useRoutes } from "../../api/useShipmentRoutes";
-import type { ShipmentDetail, ShipmentStatus } from "../../api/contract";
+import type { ShipmentDetail, ShipmentStatus, ShipmentSummary } from "../../api/contract";
 import { Button, CrossFade, EmptyState, ErrorNote, Loading, RiskBadge, Skeleton, StatusTag, ConfidenceTag } from "../../components/ui";
 import { JourneyBar, positionText } from "../../components/ShipmentParts";
 import { clock, clockTz } from "../../lib/time";
@@ -14,6 +14,7 @@ import { useCurrentTrip, useDriverOutbox } from "./useCurrentTrip";
 import { useDriverChecks } from "../../api/ops";
 import { ShiftChecks } from "./ShiftChecks";
 import { CheckinBanner, DeliveryPhoto, DrivingPanel, useHasDeliveryPhoto } from "./TripTools";
+import { NewTripBanner, RouteAndAlerts, SafetyList, TripSwitcher } from "./TripBrief";
 
 /*
   Driver trip screen (DESIGN.md 7.3): one column, one decision at a time, targets at least 44 px.
@@ -47,14 +48,15 @@ export function DriverTrip() {
   if (!s) {
     return (
       <Column>
+        <NewTripBanner />
         <EmptyState title="No trip assigned." >Your next trip will appear here when Plant X dispatches it.</EmptyState>
       </Column>
     );
   }
-  return <Trip s={s} error={detail.error} onRetry={() => detail.refetch()} loadedAt={detail.dataUpdatedAt} />;
+  return <Trip s={s} trips={list.data ?? []} error={detail.error} onRetry={() => detail.refetch()} loadedAt={detail.dataUpdatedAt} />;
 }
 
-function Trip({ s, error, onRetry, loadedAt }: { s: ShipmentDetail; error: unknown; onRetry: () => void; loadedAt: number }) {
+function Trip({ s, trips, error, onRetry, loadedAt }: { s: ShipmentDetail; trips: ShipmentSummary[]; error: unknown; onRetry: () => void; loadedAt: number }) {
   const { outbox, items, rejections } = useDriverOutbox();
   const routes = useRoutes([s.active_route_id, s.planned_route_id]);
   const eta = s.current_eta;
@@ -73,8 +75,10 @@ function Trip({ s, error, onRetry, loadedAt }: { s: ShipmentDetail; error: unkno
   return (
     <Column>
       {!!error && <ErrorNote what="the latest trip update" error={error} onRetry={onRetry} loadedAt={loadedAt} />}
+      <NewTripBanner />
       <RouteChangeBanner s={s} routes={routes} />
       <CheckinBanner s={s} />
+      <TripSwitcher trips={trips} currentId={s.id} />
 
       <section aria-labelledby="trip-h">
         <h1 id="trip-h" className="sr-only">
@@ -153,6 +157,9 @@ function Trip({ s, error, onRetry, loadedAt }: { s: ShipmentDetail; error: unkno
           <Warning size={22} weight="bold" aria-hidden /> Report a problem
         </Link>
       ) : null}
+
+      <RouteAndAlerts s={s} routes={routes} />
+      {s.status !== "DELIVERED" && <SafetyList s={s} />}
 
       <section aria-labelledby="pos-h" className="rounded-lg border border-line bg-surface p-4">
         <h2 id="pos-h" className="text-meta font-medium text-muted">

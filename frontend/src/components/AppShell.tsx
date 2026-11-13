@@ -202,11 +202,15 @@ function SimpleShell({ role }: { role: Role }) {
         <div className={`mx-auto flex h-14 items-center gap-2 px-4 ${narrow ? "max-w-xl" : "max-w-[1100px] sm:px-6"}`}>
           <NavLink to={homeFor(role)} className="flex items-center gap-2 rounded-sm font-semibold tracking-tight">
             <Mark />
-            <span className={narrow ? "sr-only sm:not-sr-only" : "whitespace-nowrap max-[420px]:sr-only"}>Plant X</span>
+            <span className={narrow ? "sr-only sm:not-sr-only" : "whitespace-nowrap max-[480px]:sr-only"}>Plant X</span>
           </NavLink>
           <span className="border-l border-line-strong pl-2 text-meta font-medium text-muted">{role === "DRIVER" ? "Driver" : "Customer"}</span>
           <div className="ml-auto flex items-center gap-1">
-            {!narrow && <PaletteTrigger onOpen={() => palette.setOpen(true)} />}
+            {!narrow && (
+              <span className="max-[400px]:hidden">
+                <PaletteTrigger onOpen={() => palette.setOpen(true)} />
+              </span>
+            )}
             <StreamIndicator />
             <AssistantChat role={role} />
             <NotificationBell />

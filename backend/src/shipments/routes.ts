@@ -81,6 +81,7 @@ export function shipmentSummary(ctx: Ctx, user: AuthUser, s: ShipmentRow) {
     current_eta: snap ? snapshotToApi(snap) : null,
     open_alert: alert ? alertToApi(alert) : null,
     open_alert_id: alert?.id ?? null,
+    extra_order_ids: extraOrders(ctx.db, s.id).map((o) => o.id),
     version: s.version,
     ...(ctx.liveRouteDemo?.isLiveShipment(s.id) ? { live_demo: true } : {}),
   };
