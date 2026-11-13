@@ -40,7 +40,7 @@ Stop any separate API or web servers already using the ports before starting. Th
 
 ## Demo accounts
 
-Use the email and password from [`database/seed/users.json`](database/seed/users.json) for the named account. Open separate browser profiles or independent windows for the roles.
+Use the email and password from [`database/seed/users.json`](database/seed/users.json) for the named account. Open separate browser profiles or independent windows for the roles. In demo mode (the launcher default) the sign-in page also lists every account under **Quick sign-in**; one click signs in without a password.
 
 | Role | Account |
 |---|---|
@@ -88,6 +88,18 @@ On a shipment's page the coordinator has an **Invoice** card with two ways to ad
 - **Upload PDF** takes your own file (PDF only, up to 2 MB). Ready-made samples for the five demo shipments are in [`database/samples/invoices/`](database/samples/invoices/).
 
 Either one replaces the invoice already there. The customer is notified, and the same card on their delivery page has a **Download** button. Drivers never see invoices. The file is stored in the database, so **Reset to 08:50** removes it.
+
+### Driver checks, stops and the delivery photo
+
+1. Sign in as a driver. Before the trip screen, the driver passes two checks, valid for 12 hours:
+   - **Licence scan**: hold a driving licence to the camera, or choose a photo. The text is read in the browser (Tesseract.js) and must say "driving licence" plus a licence number or the usual card fields. The image and text are discarded at once; the server stores only that the check passed and when. The first scan downloads the reader's language data (about 10 MB).
+   - **Voice check**: read the random phrase aloud. Chrome and Edge must hear both random words; other browsers accept a live voice. Nothing is recorded. Needs a microphone.
+2. On the road the driver sees driving time since the last break (break due after 5 hours; a placeholder rule) and can mark a **Rest break**, **Fuel**, **Charging** or **Other** stop. The coordinator is notified. If the truck stays still for 10 minutes away from a planned checkpoint, the app records an unplanned stop and alerts the coordinator.
+3. On a shipment page the coordinator's **Driver** card shows the driver's phone and live status. **Call** opens the phone dialler; **Ask to check in** sends a request the driver answers with "I'm all right" or "I have a problem".
+4. On arrival the driver must send a **delivery photo** before marking the shipment delivered. The coordinator clicks **Verify delivery**; the customer sees the photo with "Confirmed by Plant X".
+5. The coordinator's **Trip log** lists status changes, reports, stops, check-ins, the photo, the invoice, alerts and decisions, newest first. The customer's delivery page shows time and km to go, early or late, and why.
+
+**Reset to 08:50** clears checks, stops, check-ins and photos.
 
 ### Preview an electric van
 
