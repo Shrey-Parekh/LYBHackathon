@@ -96,7 +96,7 @@ async function dev() {
   const origins = new Set([web, `http://localhost:${webPort}`, ...(backendEnv.CORS_ORIGINS ?? '').split(',').map((value) => value.trim()).filter(Boolean)]);
   process.once('SIGINT', () => stop(0));
   process.once('SIGTERM', () => stop(0));
-  start('API', backend, ['--import', 'tsx', 'src/server.ts'], {
+  start('API', backend, ['--use-system-ca', '--import', 'tsx', 'src/server.ts'], {
     ...backendEnv, HOST: '127.0.0.1', PORT: String(apiPort), DEMO_MODE: demoMode,
     DATABASE_FILE: backendEnv.DATABASE_FILE || ':memory:',
     JWT_SECRET: backendEnv.JWT_SECRET || randomBytes(32).toString('hex'),

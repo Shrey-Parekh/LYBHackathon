@@ -126,7 +126,8 @@ export async function askGroq(key: string, model: string, system: string, histor
     const answer = data.choices?.[0]?.message?.content?.trim();
     if (!answer) throw new Error('Groq returned an empty answer');
     return answer;
-  } catch {
+  } catch (e) {
+    console.warn(`[assistant] ${e instanceof Error ? e.message : String(e)}`, (e as { cause?: { code?: string; message?: string } })?.cause?.code ?? (e as { cause?: { message?: string } })?.cause?.message ?? ""); // the reason, without the key
     throw new ApiError(502, 'ASSISTANT_UNAVAILABLE', 'The assistant could not answer just now. Try again in a moment');
   }
 }

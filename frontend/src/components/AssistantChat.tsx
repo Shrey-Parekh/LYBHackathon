@@ -130,7 +130,7 @@ export function AssistantChat({ role }: { role: Role }) {
                   <li key={i} className={`flex ${t.role === "user" ? "justify-end" : "justify-start"}`}>
                     <p className={`whitespace-pre-wrap break-words text-body ${t.role === "user" ? "max-w-[85%] rounded-lg rounded-br-sm bg-ink px-3 py-2 text-surface" : "max-w-[92%] border-l-[3px] border-accent py-0.5 pl-3 text-ink"}`}>
                       <span className="sr-only">{t.role === "user" ? "You: " : "Assistant: "}</span>
-                      {t.content}
+                      {t.role === "assistant" ? withBold(t.content) : t.content}
                     </p>
                   </li>
                 ))}
@@ -174,4 +174,9 @@ export function AssistantChat({ role }: { role: Role }) {
       )}
     </div>
   );
+}
+
+/** The model marks key facts with **bold**; show that as bold text instead of asterisks. Nothing else is parsed. */
+function withBold(text: string) {
+  return text.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <strong key={i} className="font-semibold">{part}</strong> : part));
 }
