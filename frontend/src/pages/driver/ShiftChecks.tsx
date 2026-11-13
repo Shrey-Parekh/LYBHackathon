@@ -82,23 +82,46 @@ function LicenceScan() {
   async function read(source: CanvasImageSource, w: number, h: number) {
     setState({ k: "reading", progress: 0 });
     const canvas = document.createElement("canvas");
-    const scale = Math.min(2, 1800 / w); // OCR reads best at about 1800 px wide
-    canvas.width = Math.round(w * scale);
-    canvas.height = Math.round(h * scale);
     const g = canvas.getContext("2d")!;
-    g.filter = "grayscale(1) contrast(1.25)";
-    g.drawImage(source, 0, 0, canvas.width, canvas.height);
+    const scale = Math.min(2, 1800 / Math.max(w, h)); // OCR reads best at about 1800 px on the long side
+    /** Draws the photo, optionally turned a quarter and with a filter. */
+    const draw = (turn: boolean, filter: string) => {
+      const [cw, ch] = [Math.round(w * scale), Math.round(h * scale)];
+      canvas.width = turn ? ch : cw;
+      canvas.height = turn ? cw : ch;
+      g.filter = filter;
+      if (turn) {
+        g.translate(ch, 0);
+        g.rotate(Math.PI / 2);
+      }
+      g.drawImage(source, 0, 0, cw, ch);
+      g.setTransform(1, 0, 0, 1, 0, 0);
+    };
+    // Each try reads the photo differently; the first that passes wins. Sideways only for upright photos.
+    const tries: { turn: boolean; filter: string; psm: string }[] = [
+      { turn: false, filter: "none", psm: "3" },
+      { turn: false, filter: "grayscale(1) contrast(1.6)", psm: "11" },
+      ...(h > w ? [{ turn: true, filter: "grayscale(1) contrast(1.6)", psm: "11" }] : []),
+    ];
     try {
       const { createWorker } = await import("tesseract.js");
-      const worker = await createWorker("eng", 1, { logger: (m) => m.status === "recognizing text" && setState({ k: "reading", progress: m.progress }) });
-      let text = "";
+      let step = 0;
+      const worker = await createWorker("eng", 1, {
+        logger: (m) => m.status === "recognizing text" && setState({ k: "reading", progress: (step + m.progress) / tries.length }),
+      });
+      let result = checkLicenceText("");
       try {
-        text = (await worker.recognize(canvas)).data.text;
+        for (const t of tries) {
+          draw(t.turn, t.filter);
+          await worker.setParameters({ tessedit_pageseg_mode: t.psm as never });
+          const r = checkLicenceText((await worker.recognize(canvas)).data.text);
+          result = r.ok || (r.title && !result.title) ? r : result;
+          if (r.ok) break;
+          step++;
+        }
       } finally {
         await worker.terminate();
       }
-      const result = checkLicenceText(text);
-      text = "";
       if (result.ok) {
         await pass.mutateAsync("LICENCE");
         setState({ k: "idle" });
