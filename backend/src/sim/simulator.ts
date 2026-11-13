@@ -33,6 +33,7 @@ export class Simulator implements CounterfactualProvider {
     this.clock.set(Date.parse(sc.clock_start));
     this.clock.paused = true;
     this.clock.speed = this.ctx.fixtures.config.demo.speed;
+    this.ctx.routeTraffic?.clear(); // before the seed, so its ETA run asks TomTom afresh
     seedDatabase(this.ctx, actorUserId);
     this.ctx.liveRouteDemo?.reset();
     this.status = 'IDLE';

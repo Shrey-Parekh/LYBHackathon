@@ -15,6 +15,11 @@ export function etaStateFor(ctx: Ctx, s: ShipmentRow, now: string) {
   const state = buildEtaState(ctx.db, s, now, ctx.fixtures.config.eta, forecast);
   const live = ctx.liveRouteDemo;
   if (live?.isLiveShipment(s.id)) state.liveRouting = { drive: live.drive(s.active_route_id, s.last_progress_km) };
+  else {
+    // Only with a fresh TomTom quote; otherwise baseline speeds and observed pace, as before.
+    const drive = ctx.routeTraffic?.drive(s);
+    if (drive) state.liveRouting = { drive };
+  }
   return state;
 }
 

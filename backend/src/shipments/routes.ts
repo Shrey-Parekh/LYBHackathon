@@ -6,7 +6,7 @@ import { alertToApi, type AlertRow } from '../alerts/alerts';
 import type { AuthUser } from '../auth/policy';
 import type { Ctx } from '../ctx';
 import { checkEventPermission, ingestEvent } from '../events/ingest';
-import { notFound } from '../http/errors';
+import { ApiError, notFound } from '../http/errors';
 import { defineRoute, type RegisteredRoute } from '../http/route';
 import {
   ErrorResponse,
@@ -151,7 +151,8 @@ export function shipmentDetail(ctx: Ctx, user: AuthUser, s: ShipmentRow) {
       reported_at: d.reported_at,
       cleared_at: d.cleared_at,
     })),
-    ...(ctx.liveRouteDemo?.isLiveShipment(s.id) ? { live_traffic: ctx.liveRouteDemo.traffic(s.active_route_id, s.last_progress_km) } : {}),
+    ...(ctx.liveRouteDemo?.isLiveShipment(s.id) ? { live_traffic: ctx.liveRouteDemo.traffic(s.active_route_id, s.last_progress_km) }
+      : ctx.routeTraffic ? { live_traffic: ctx.routeTraffic.traffic(s) } : {}),
     ...(user.role !== 'DRIVER' ? { invoice: invoiceMeta(db, s.id) } : {}),
     // Orders added to this truck at dispatch; quantity_t above already includes them.
     extra_orders: extraOrders(db, s.id),
@@ -193,16 +194,33 @@ export function registerShipmentRoutes(app: FastifyInstance, ctx: Ctx, reg: Regi
   });
 
   defineRoute<{ id: string }>(app, ctx, reg, {
+    method: 'POST',
+    url: '/shipments/:id/traffic/refresh',
+    roles: ['COORDINATOR'],
+    summary: 'Ask TomTom again for drive time and traffic on the remaining route, then recalculate the ETA',
+    params: IdParams,
+    responses: { 200: ShipmentDetail, 404: ErrorResponse, 409: ErrorResponse, 502: ErrorResponse, 503: ErrorResponse },
+    handler: async ({ user, params }) => {
+      const s = getVisibleShipment(db, user!, params.id);
+      if (!s) throw notFound('Shipment not found');
+      if (ctx.liveRouteDemo?.isLiveShipment(s.id)) await ctx.liveRouteDemo.refresh(s.id);
+      else if (ctx.routeTraffic) await ctx.routeTraffic.refresh(s.id);
+      else throw new ApiError(503, 'LIVE_ROUTING_UNCONFIGURED', 'Set TOMTOM_API_KEY on the API server to use live traffic');
+      return { status: 200, body: shipmentDetail(ctx, user!, getShipment(db, s.id)!) };
+    },
+  });
+
+  defineRoute<{ id: string }>(app, ctx, reg, {
     method: 'GET',
     url: '/shipments/:id/road-conditions',
     roles: [...ALL],
-    summary: 'TomTom traffic flow samples and reported incidents near the remaining live route',
+    summary: 'TomTom traffic flow samples and reported incidents near the remaining route',
     params: IdParams,
     responses: { 200: RoadConditionsResponse, 404: ErrorResponse },
     handler: async ({ user, params }) => {
       const shipment = getVisibleShipment(db, user!, params.id);
-      if (!roadConditions || !shipment || shipment.status !== 'IN_TRANSIT' || !ctx.liveRouteDemo?.isLiveShipment(shipment.id)) {
-        throw notFound('Road conditions are available for live shipments in transit');
+      if (!roadConditions || !shipment || shipment.status !== 'IN_TRANSIT') {
+        throw notFound('Road conditions are available for shipments in transit');
       }
       const route = getRoute(db, shipment.active_route_id);
       if (!route?.geometry) throw notFound('The active route has no geometry');

@@ -286,3 +286,35 @@ describe('live truck routing demo', () => {
     } finally { await t.close(); }
   });
 });
+
+describe('TomTom ETA for scripted and ordered shipments', () => {
+  it('uses TomTom drive time and traffic for SHP-1001 after a refresh, and baseline speeds before', async () => {
+    const provider = vi.fn(async (url: URL, init: RequestInit) => {
+      expect(url.searchParams.get('travelMode')).toBe('truck');
+      expect(init.method).toBe('POST');
+      return Response.json({ routes: [route([origin, junction, destination], 90, 20)] });
+    });
+    vi.stubGlobal('fetch', provider);
+    const t = await makeApp({ tomTomApiKey: KEY }, REAL_FIXTURES_DIR);
+    try {
+      const c = await t.login(COORD);
+      const before = (await t.req('GET', '/shipments/SHP-1001', c)).body;
+      expect(provider).not.toHaveBeenCalled();
+      expect(before.live_traffic.status).toBe('UNAVAILABLE');
+      expect(before.current_eta.factors.map((f: { label: string }) => f.label)).not.toContain('Remaining drive estimate (TomTom)');
+
+      expect((await t.req('POST', '/shipments/SHP-1001/traffic/refresh', await t.login(CUST1))).status).toBe(403);
+      const after = await t.req('POST', '/shipments/SHP-1001/traffic/refresh', c);
+      expect(after.status).toBe(200);
+      expect(provider).toHaveBeenCalledTimes(1);
+      expect(after.body.live_traffic).toMatchObject({ status: 'LIVE', drive_minutes: 90, traffic_delay_min: 20 });
+      const factors = after.body.current_eta.factors as { code: string; label: string; minutes: number }[];
+      expect(factors).toContainEqual({ code: 'BASE_TRAVEL', label: 'Remaining drive estimate (TomTom)', minutes: 70 });
+      expect(factors).toContainEqual({ code: 'CONGESTION', label: 'Live traffic delay (TomTom)', minutes: 20 });
+
+      // Reset clears the quotes, so the seeded ETA goes back to baseline speeds until TomTom answers again.
+      expect((await t.req('POST', '/demo/reset', c)).status).toBe(200);
+      expect((await t.req('GET', '/shipments/SHP-1001', c)).body.live_traffic.status).toBe('UNAVAILABLE');
+    } finally { await t.close(); }
+  });
+});

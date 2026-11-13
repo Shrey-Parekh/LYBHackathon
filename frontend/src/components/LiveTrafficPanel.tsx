@@ -5,7 +5,7 @@ import { Button, ErrorNote } from "./ui";
 
 export function LiveTrafficPanel({ traffic, refreshShipmentId }: { traffic: LiveTraffic; refreshShipmentId?: string }) {
   const refresh = useDemoCommand();
-  const refreshTraffic = () => { if (refreshShipmentId) refresh.mutate({ path: `/demo/live-route/${refreshShipmentId}/refresh` }); };
+  const refreshTraffic = () => { if (refreshShipmentId) refresh.mutate({ path: `/shipments/${refreshShipmentId}/traffic/refresh` }); };
   const live = traffic.status === "LIVE";
   return (
     <div className="space-y-2 rounded-md border border-line bg-surface p-3 text-body text-ink-2">
@@ -14,7 +14,7 @@ export function LiveTrafficPanel({ traffic, refreshShipmentId }: { traffic: Live
         {refreshShipmentId && <Button size="sm" disabled={refresh.isPending} onClick={refreshTraffic}>{refresh.isPending ? "Refreshing…" : "Refresh traffic"}</Button>}
       </div>
       <p className="text-meta">
-        Simulated GPS at 1× · {live ? `${traffic.drive_minutes} min driving remaining, including ${traffic.traffic_delay_min} min traffic delay` : "ETA uses estimated driving time for an in-transit shipment"}
+        {live ? `${traffic.drive_minutes} min driving remaining, including ${traffic.traffic_delay_min} min traffic delay` : "ETA uses normal road speeds until TomTom answers"}
         {traffic.fetched_at && ` · ${live ? "Updated" : "Last response"} ${clockTz(traffic.fetched_at)}`}
       </p>
       {live && traffic.sections.length > 0 && <p className="text-meta">Highlighted road sections show reported traffic.</p>}

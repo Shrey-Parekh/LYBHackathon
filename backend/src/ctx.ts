@@ -7,6 +7,7 @@ import type { StreamHub } from './stream/hub';
 import type { Notifier } from './notify/notifier';
 import type { RouteWeather } from './weather/weather';
 import type { LiveRouteDemo } from './liveRouting/demo';
+import type { RouteTraffic } from './shipments/routeTraffic';
 
 /** Gives the simulated no-action arrival for a shipment (demo mode only). */
 export interface CounterfactualProvider {
@@ -23,6 +24,8 @@ export interface Ctx {
   counterfactual: CounterfactualProvider | null;
   weather: RouteWeather;
   liveRouteDemo?: LiveRouteDemo;
+  /** TomTom drive time for every other shipment; set when TOMTOM_API_KEY is. */
+  routeTraffic?: RouteTraffic;
 }
 
 export function shipmentNow(ctx: Ctx, shipmentId: string): string {

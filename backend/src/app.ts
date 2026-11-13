@@ -30,6 +30,7 @@ import { recomputeEta } from './shipments/recompute';
 import type { PendingHint } from './stream/hub';
 import { LiveRouteDemo } from './liveRouting/demo';
 import { registerLiveRouteDemo } from './liveRouting/routes';
+import { RouteTraffic, TRAFFIC_REFRESH_MS } from './shipments/routeTraffic';
 import { registerAssistantRoutes } from './assistant/routes';
 import { registerInvoiceRoutes } from './invoices/routes';
 import { registerOrderRoutes } from './orders/routes';
@@ -73,6 +74,7 @@ export async function buildApp(opts: BuildOptions): Promise<Built> {
   };
   const sim = simClock ? new Simulator(ctx, simClock, opts.autoTick ?? true) : null;
   if (sim) ctx.liveRouteDemo = new LiveRouteDemo(ctx, opts.autoTick ?? true);
+  if (config.tomTomApiKey) ctx.routeTraffic = new RouteTraffic(ctx, config.tomTomApiKey, opts.autoTick ?? true);
   ctx.counterfactual = sim;
 
   // Demo mode always starts from the seed; otherwise seed only an empty database.
@@ -129,6 +131,12 @@ export async function buildApp(opts: BuildOptions): Promise<Built> {
   // Real clock: the stale-position check runs every 5 minutes. (In demo mode the simulator runs it.)
   const timers: NodeJS.Timeout[] = [setInterval(() => ctx.hub.keepAlive(), 15_000)];
   if (!sim) timers.push(setInterval(() => staleTick(ctx), fixtures.config.demo.stale_tick_min * 60_000));
+  // TomTom: re-quote every active shipment on a timer (new and rerouted ones are also quoted on demand).
+  const traffic = ctx.routeTraffic;
+  if (traffic && opts.autoTick !== false) {
+    void traffic.refreshAll();
+    timers.push(setInterval(() => void traffic.refreshAll(), TRAFFIC_REFRESH_MS));
+  }
   // Live mode: refresh the forecast on a timer and re-run the ETA of every truck on the road.
   if (!sim && opts.autoTick !== false) {
     const liveWeather = async () => {

@@ -12,6 +12,11 @@ const VEHICLES = {
 };
 const CITY_VAN = { label: 'Delivery van', tare_t: 2.1, max_gross_t: 3.5, height_m: 2.45, width_m: 2.05, length_m: 5.4 };
 
+/** Smallest listed vehicle that carries this gross weight. TomTom truck routing needs its size. */
+export function vehicleFor(grossT: number): ShipmentDraft['vehicle'] {
+  return [CITY_VAN, VEHICLES.light, VEHICLES.standard, VEHICLES.heavy].find((v) => grossT <= v.max_gross_t) ?? VEHICLES.heavy;
+}
+
 const PRODUCTS = ['PP pellets', 'HDPE pellets', 'LDPE resin'] as const;
 const CITY_PRODUCTS = ['PP sample cartons', 'HDPE sample cartons'] as const;
 export const PRESETS = [
